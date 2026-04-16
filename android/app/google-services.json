@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "609499275767",
+    "project_id": "play-academy-a73b2",
+    "storage_bucket": "play-academy-a73b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:609499275767:android:d037be2ccf01fe91fb4ef2",
+        "android_client_info": {
+          "package_name": "com.example.play_academy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDgp8iFQg6oy2OuWpU_rAJjwPVSfOihYwk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
