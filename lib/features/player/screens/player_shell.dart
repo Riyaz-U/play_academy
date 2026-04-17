@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/payment_provider.dart';
+import '../../../providers/player_provider.dart';
 
 class PlayerShell extends StatefulWidget {
   final Widget child;
@@ -25,6 +26,7 @@ class _PlayerShellState extends State<PlayerShell> {
       context.read<SessionProvider>().listenToSessions(user.branchId ?? '');
       context.read<AttendanceProvider>().listenToPlayerAttendance(user.uid);
       context.read<PaymentProvider>().listenToPlayerPayments(user.uid);
+      context.read<PlayerProvider>().listenToSelf(user.uid);
     });
   }
 

@@ -206,6 +206,13 @@ class FirestoreService {
     await _db.collection(AppConstants.usersCollection).doc(uid).delete();
   }
 
+  Stream<PlayerModel?> streamPlayerById(String uid) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .doc(uid)
+          .snapshots()
+          .map((s) => s.exists ? PlayerModel.fromMap(s.data()!, s.id) : null);
+
   Stream<List<PlayerModel>> streamPlayersByOrg(String organizationId) =>
       _db
           .collection(AppConstants.playersCollection)

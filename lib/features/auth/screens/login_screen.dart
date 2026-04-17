@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../widgets/whistle_loading.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,12 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final auth = context.watch<AuthProvider>();
 
     if (auth.status == AuthStatus.unknown) {
-      return const Scaffold(
-        backgroundColor: AppTheme.backgroundGrey,
-        body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryGreen),
-        ),
-      );
+      return const WhistleLoading();
     }
 
     return Scaffold(

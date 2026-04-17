@@ -3,9 +3,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/player_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/payment_provider.dart';
+import '../../../models/attendance_model.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../widgets/session_card.dart';
 
@@ -14,28 +16,39 @@ class PlayerDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().userModel;
-    final sessions = context.watch<SessionProvider>();
-    final attendance = context.watch<AttendanceProvider>();
-    final payments = context.watch<PaymentProvider>();
+    final user        = context.watch<AuthProvider>().userModel;
+    final playerData  = context.watch<PlayerProvider>().self;
+    final sessions    = context.watch<SessionProvider>();
+    final attendance  = context.watch<AttendanceProvider>();
+    final payments    = context.watch<PaymentProvider>();
 
     final now = DateTime.now();
     final nextSession = sessions.upcomingSessions.isNotEmpty
         ? sessions.upcomingSessions.first
         : null;
 
-    // Find the most recent completed session with highlights
     final recentHighlights = sessions.sessions
-        .where((s) =>
-            s.isCompleted &&
-            s.highlights != null &&
-            s.highlights!.isNotEmpty)
+        .where((s) => s.isCompleted && s.highlights != null && s.highlights!.isNotEmpty)
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
-    final highlightSession =
-        recentHighlights.isNotEmpty ? recentHighlights.first : null;
+    final highlightSession = recentHighlights.isNotEmpty ? recentHighlights.first : null;
 
     final hasPendingPayment = payments.pendingPayments.isNotEmpty;
+
+    // Last 5 rated attendance records (most recent first)
+    final recentPerf = attendance.playerAttendance
+        .where((a) => a.rating != null && a.rating! > 0)
+        .toList()
+      ..sort((a, b) => b.markedAt.compareTo(a.markedAt));
+    final recentPerfSlice = recentPerf.take(5).toList();
+
+    // Attendance breakdown
+    final total   = attendance.playerAttendance.length;
+    final present = attendance.playerAttendance.where((a) => a.status == 'present').length;
+    final late    = attendance.playerAttendance.where((a) => a.status == 'late').length;
+    final absent  = attendance.playerAttendance.where((a) => a.status == 'absent').length;
+
+    final stats = playerData?.stats;
 
     return Scaffold(
       appBar: AppBar(
@@ -54,8 +67,7 @@ class PlayerDashboard extends StatelessWidget {
                 enabled: false,
                 child: Text(user?.name ?? '',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textDark)),
+                        fontWeight: FontWeight.bold, color: AppTheme.textDark)),
               ),
               const PopupMenuDivider(),
               const PopupMenuItem(value: 'logout', child: Text('Sign Out')),
@@ -68,7 +80,7 @@ class PlayerDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile card
+            // ── Profile card ──────────────────────────────────────────────
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -130,11 +142,41 @@ class PlayerDashboard extends StatelessWidget {
                           ],
                         ),
                       ),
+                      // Jersey number badge
+                      if (playerData != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.3)),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                '#${playerData.jerseyNumber}',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                playerData.position,
+                                style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Stats row
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _StatPill(
                         label:
@@ -142,7 +184,6 @@ class PlayerDashboard extends StatelessWidget {
                         suffix: 'attendance',
                         icon: Icons.check_circle_outline,
                       ),
-                      const SizedBox(width: 10),
                       _StatPill(
                         label: attendance.averageRating > 0
                             ? attendance.averageRating.toStringAsFixed(1)
@@ -150,6 +191,12 @@ class PlayerDashboard extends StatelessWidget {
                         suffix: 'avg rating',
                         icon: Icons.star_outline,
                       ),
+                      if (playerData != null)
+                        _StatPill(
+                          label: stats!.overall.toStringAsFixed(0),
+                          suffix: 'overall',
+                          icon: Icons.sports_soccer,
+                        ),
                     ],
                   ),
                 ],
@@ -157,7 +204,7 @@ class PlayerDashboard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Pending payment alert
+            // ── Pending payment alert ─────────────────────────────────────
             if (hasPendingPayment)
               _AlertBanner(
                 icon: Icons.payment_outlined,
@@ -168,15 +215,108 @@ class PlayerDashboard extends StatelessWidget {
                 onAction: () => context.go('/player/payments'),
               ),
 
-            // Next session
-            const Text(
-              'Next Session',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark),
-            ),
-            const SizedBox(height: 8),
+            // ── Player Stats ──────────────────────────────────────────────
+            if (stats != null) ...[
+              _SectionHeader(title: 'Player Stats'),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardDark,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppTheme.borderDark.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _OverallBadge(overall: stats.overall),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _StatBar(label: 'Pace',       value: stats.pace),
+                              _StatBar(label: 'Shooting',   value: stats.shooting),
+                              _StatBar(label: 'Passing',    value: stats.passing),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _StatBar(label: 'Dribbling',  value: stats.dribbling),
+                              _StatBar(label: 'Defending',  value: stats.defending),
+                              _StatBar(label: 'Physical',   value: stats.physical),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Attendance Summary ────────────────────────────────────────
+            if (total > 0) ...[
+              _SectionHeader(title: 'Attendance Summary'),
+              Row(
+                children: [
+                  Expanded(
+                    child: _AttendanceBox(
+                      count: present,
+                      label: 'Present',
+                      color: AppTheme.primaryGreen,
+                      icon: Icons.check_circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _AttendanceBox(
+                      count: late,
+                      label: 'Late',
+                      color: AppTheme.accentAmber,
+                      icon: Icons.schedule,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _AttendanceBox(
+                      count: absent,
+                      label: 'Absent',
+                      color: AppTheme.errorRed,
+                      icon: Icons.cancel,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Recent Performance ────────────────────────────────────────
+            if (recentPerfSlice.isNotEmpty) ...[
+              _SectionHeader(title: 'Recent Performance'),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.cardDark,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                      color: AppTheme.borderDark.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  children: recentPerfSlice
+                      .map((a) => _PerformanceRow(record: a))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Next Session ──────────────────────────────────────────────
+            _SectionHeader(title: 'Next Session'),
             if (nextSession == null)
               _EmptyCard(
                 icon: Icons.calendar_today_outlined,
@@ -186,15 +326,8 @@ class PlayerDashboard extends StatelessWidget {
               SessionCard(session: nextSession),
             const SizedBox(height: 20),
 
-            // Recent highlights
-            const Text(
-              'Recent Highlights',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark),
-            ),
-            const SizedBox(height: 8),
+            // ── Recent Highlights ─────────────────────────────────────────
+            _SectionHeader(title: 'Recent Highlights'),
             if (highlightSession == null)
               _EmptyCard(
                 icon: Icons.highlight_outlined,
@@ -209,6 +342,212 @@ class PlayerDashboard extends StatelessWidget {
   }
 }
 
+// ── Section header ────────────────────────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  const _SectionHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textDark),
+      ),
+    );
+  }
+}
+
+// ── Overall badge (circular) ──────────────────────────────────────────────────
+class _OverallBadge extends StatelessWidget {
+  final double overall;
+  const _OverallBadge({required this.overall});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 68,
+      height: 68,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppTheme.primaryGreen, width: 2.5),
+        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            overall.toStringAsFixed(0),
+            style: const TextStyle(
+                color: AppTheme.primaryGreen,
+                fontSize: 22,
+                fontWeight: FontWeight.bold),
+          ),
+          const Text(
+            'OVR',
+            style: TextStyle(
+                color: AppTheme.textGrey,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stat bar (label + progress + value) ──────────────────────────────────────
+class _StatBar extends StatelessWidget {
+  final String label;
+  final int value;
+  const _StatBar({required this.label, required this.value});
+
+  Color get _barColor {
+    if (value >= 75) return AppTheme.primaryGreen;
+    if (value >= 50) return AppTheme.accentAmber;
+    return AppTheme.errorRed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label,
+                  style: const TextStyle(
+                      color: AppTheme.textGrey, fontSize: 10)),
+              Text('$value',
+                  style: const TextStyle(
+                      color: AppTheme.textDark,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: value / 100,
+              minHeight: 5,
+              backgroundColor: AppTheme.borderDark,
+              valueColor: AlwaysStoppedAnimation(_barColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Attendance summary box ────────────────────────────────────────────────────
+class _AttendanceBox extends StatelessWidget {
+  final int count;
+  final String label;
+  final Color color;
+  final IconData icon;
+  const _AttendanceBox(
+      {required this.count,
+      required this.label,
+      required this.color,
+      required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(height: 6),
+          Text(
+            '$count',
+            style: TextStyle(
+                color: color, fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 2),
+          Text(label,
+              style:
+                  const TextStyle(color: AppTheme.textGrey, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Recent performance row ────────────────────────────────────────────────────
+class _PerformanceRow extends StatelessWidget {
+  final AttendanceModel record;
+  const _PerformanceRow({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(
+            bottom: BorderSide(color: Color(0xFF2A2A2A))),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat('d MMM yyyy').format(record.markedAt),
+                  style: const TextStyle(
+                      color: AppTheme.textDark,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600),
+                ),
+                if (record.ratingNote != null &&
+                    record.ratingNote!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      record.ratingNote!,
+                      style: const TextStyle(
+                          color: AppTheme.textGrey, fontSize: 11),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              5,
+              (i) => Icon(
+                i < (record.rating ?? 0) ? Icons.star : Icons.star_border,
+                size: 14,
+                color: AppTheme.accentAmber,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Stat pill (profile card) ──────────────────────────────────────────────────
 class _StatPill extends StatelessWidget {
   final String label;
   final String suffix;
@@ -239,6 +578,7 @@ class _StatPill extends StatelessWidget {
   }
 }
 
+// ── Alert banner ──────────────────────────────────────────────────────────────
 class _AlertBanner extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -290,6 +630,7 @@ class _AlertBanner extends StatelessWidget {
   }
 }
 
+// ── Empty state card ──────────────────────────────────────────────────────────
 class _EmptyCard extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -318,6 +659,7 @@ class _EmptyCard extends StatelessWidget {
   }
 }
 
+// ── Highlight card ────────────────────────────────────────────────────────────
 class _HighlightCard extends StatelessWidget {
   final dynamic session;
   const _HighlightCard({required this.session});
@@ -348,8 +690,7 @@ class _HighlightCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star,
-                        size: 12, color: AppTheme.accentAmber),
+                    const Icon(Icons.star, size: 12, color: AppTheme.accentAmber),
                     const SizedBox(width: 3),
                     Text(
                       session.isMatch ? 'Match' : 'Training',

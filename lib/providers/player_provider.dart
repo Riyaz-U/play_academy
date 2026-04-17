@@ -12,13 +12,25 @@ class PlayerProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
   List<PlayerModel> _players = [];
+  PlayerModel? _self;
   bool _isLoading = false;
   String? _error;
   StreamSubscription<List<PlayerModel>>? _subscription;
+  StreamSubscription<PlayerModel?>? _selfSub;
 
   List<PlayerModel> get players => _players;
+  PlayerModel? get self => _self;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  /// Player: listen to their own PlayerModel document (for stats, position, etc.)
+  void listenToSelf(String uid) {
+    _selfSub?.cancel();
+    _selfSub = _firestoreService.streamPlayerById(uid).listen((player) {
+      _self = player;
+      notifyListeners();
+    });
+  }
 
   /// Admin: listen to ALL players in the organization.
   void listenByOrg(String organizationId) {
@@ -163,6 +175,7 @@ class PlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _selfSub?.cancel();
     super.dispose();
   }
 }
