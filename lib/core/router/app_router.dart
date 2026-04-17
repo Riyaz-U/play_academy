@@ -17,6 +17,7 @@ import '../../features/coach/screens/coach_dashboard.dart';
 import '../../features/coach/screens/sessions_screen.dart';
 import '../../features/coach/screens/add_session_screen.dart';
 import '../../features/coach/screens/mark_attendance_screen.dart';
+import '../../features/coach/screens/qr_generator_screen.dart';
 import '../../features/coach/screens/coach_players_screen.dart';
 import '../../features/coach/screens/drills_screen.dart';
 import '../../features/coach/screens/video_analysis_screen.dart';
@@ -27,6 +28,7 @@ import '../../features/player/screens/player_dashboard.dart';
 import '../../features/player/screens/player_schedule_screen.dart';
 import '../../features/player/screens/player_attendance_screen.dart';
 import '../../features/player/screens/player_payments_screen.dart';
+import '../../features/player/screens/qr_scanner_screen.dart';
 import '../../features/shared/player_detail_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
@@ -44,7 +46,6 @@ GoRouter createRouter(AuthProvider authProvider) {
       final role = authProvider.userModel?.role;
       final loc = state.matchedLocation;
 
-      // Still determining auth state — stay put
       if (status == AuthStatus.unknown) return null;
 
       final onAuthPage = loc == '/login' || loc == '/register';
@@ -53,14 +54,12 @@ GoRouter createRouter(AuthProvider authProvider) {
         return onAuthPage ? null : '/login';
       }
 
-      // Authenticated — redirect away from auth pages to role home
       if (onAuthPage) {
         if (role == AppConstants.roleOrgAdmin) return '/org';
         if (role == AppConstants.roleCoach) return '/coach';
         if (role == AppConstants.rolePlayer) return '/player';
       }
 
-      // Role-based access guard
       if (loc.startsWith('/org') && role != AppConstants.roleOrgAdmin) {
         return '/login';
       }
@@ -85,64 +84,11 @@ GoRouter createRouter(AuthProvider authProvider) {
         routes: [
           GoRoute(path: '/org', builder: (_, _) => const OrgDashboard()),
           GoRoute(
-            path: '/org/branches',
-            builder: (_, _) => const BranchesScreen(),
-            routes: [
-              GoRoute(
-                path: 'add',
-                parentNavigatorKey: _rootKey,
-                builder: (_, _) => const AddEditBranchScreen(),
-              ),
-              GoRoute(
-                path: 'edit/:id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => AddEditBranchScreen(
-                    branchId: state.pathParameters['id']),
-              ),
-            ],
-          ),
+              path: '/org/branches', builder: (_, _) => const BranchesScreen()),
           GoRoute(
-            path: '/org/players',
-            builder: (_, _) => const OrgPlayersScreen(),
-            routes: [
-              GoRoute(
-                path: 'add',
-                parentNavigatorKey: _rootKey,
-                builder: (_, _) => const AddEditPlayerScreen(),
-              ),
-              GoRoute(
-                path: 'edit/:id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => AddEditPlayerScreen(
-                    playerId: state.pathParameters['id']),
-              ),
-              GoRoute(
-                path: ':id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => PlayerDetailScreen(
-                  playerId: state.pathParameters['id']!,
-                  backRoute: '/org/players',
-                ),
-              ),
-            ],
-          ),
+              path: '/org/players', builder: (_, _) => const OrgPlayersScreen()),
           GoRoute(
-            path: '/org/coaches',
-            builder: (_, _) => const CoachesScreen(),
-            routes: [
-              GoRoute(
-                path: 'add',
-                parentNavigatorKey: _rootKey,
-                builder: (_, _) => const AddEditCoachScreen(),
-              ),
-              GoRoute(
-                path: 'edit/:id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => AddEditCoachScreen(
-                    coachId: state.pathParameters['id']),
-              ),
-            ],
-          ),
+              path: '/org/coaches', builder: (_, _) => const CoachesScreen()),
         ],
       ),
 
@@ -151,55 +97,18 @@ GoRouter createRouter(AuthProvider authProvider) {
         navigatorKey: _coachShellKey,
         builder: (_, _, child) => CoachShell(child: child),
         routes: [
+          GoRoute(path: '/coach', builder: (_, _) => const CoachDashboard()),
           GoRoute(
-              path: '/coach', builder: (_, _) => const CoachDashboard()),
+              path: '/coach/sessions',
+              builder: (_, _) => const CoachSessionsScreen()),
           GoRoute(
-            path: '/coach/sessions',
-            builder: (_, _) => const CoachSessionsScreen(),
-            routes: [
-              GoRoute(
-                path: 'add',
-                parentNavigatorKey: _rootKey,
-                builder: (_, _) => const AddSessionScreen(),
-              ),
-              GoRoute(
-                path: ':sessionId/attendance',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => MarkAttendanceScreen(
-                    sessionId: state.pathParameters['sessionId']!),
-              ),
-            ],
-          ),
+              path: '/coach/drills', builder: (_, _) => const DrillsScreen()),
           GoRoute(
-              path: '/coach/drills',
-              builder: (_, _) => const DrillsScreen()),
+              path: '/coach/video',
+              builder: (_, _) => const VideoAnalysisScreen()),
           GoRoute(
-            path: '/coach/video',
-            builder: (_, _) => const VideoAnalysisScreen(),
-            routes: [
-              GoRoute(
-                path: ':id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => VideoDetailScreen(
-                  video: state.extra as VideoAnalysisModel,
-                ),
-              ),
-            ],
-          ),
-          GoRoute(
-            path: '/coach/players',
-            builder: (_, _) => const CoachPlayersScreen(),
-            routes: [
-              GoRoute(
-                path: ':id',
-                parentNavigatorKey: _rootKey,
-                builder: (_, state) => PlayerDetailScreen(
-                  playerId: state.pathParameters['id']!,
-                  backRoute: '/coach/players',
-                ),
-              ),
-            ],
-          ),
+              path: '/coach/players',
+              builder: (_, _) => const CoachPlayersScreen()),
         ],
       ),
 
@@ -208,8 +117,7 @@ GoRouter createRouter(AuthProvider authProvider) {
         navigatorKey: _playerShellKey,
         builder: (_, _, child) => PlayerShell(child: child),
         routes: [
-          GoRoute(
-              path: '/player', builder: (_, _) => const PlayerDashboard()),
+          GoRoute(path: '/player', builder: (_, _) => const PlayerDashboard()),
           GoRoute(
               path: '/player/schedule',
               builder: (_, _) => const PlayerScheduleScreen()),
@@ -221,6 +129,62 @@ GoRouter createRouter(AuthProvider authProvider) {
               builder: (_, _) => const PlayerPaymentsScreen()),
         ],
       ),
+
+      // ── Full-screen routes (no shell) ────────────────────
+      // Org Admin
+      GoRoute(
+          path: '/org/branches/add',
+          builder: (_, _) => const AddEditBranchScreen()),
+      GoRoute(
+          path: '/org/branches/edit/:id',
+          builder: (_, state) =>
+              AddEditBranchScreen(branchId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/org/players/add',
+          builder: (_, _) => const AddEditPlayerScreen()),
+      GoRoute(
+          path: '/org/players/edit/:id',
+          builder: (_, state) =>
+              AddEditPlayerScreen(playerId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/org/players/:id',
+          builder: (_, state) => PlayerDetailScreen(
+                playerId: state.pathParameters['id']!,
+                backRoute: '/org/players',
+              )),
+      GoRoute(
+          path: '/org/coaches/add',
+          builder: (_, _) => const AddEditCoachScreen()),
+      GoRoute(
+          path: '/org/coaches/edit/:id',
+          builder: (_, state) =>
+              AddEditCoachScreen(coachId: state.pathParameters['id'])),
+
+      // Coach
+      GoRoute(
+          path: '/coach/sessions/add',
+          builder: (_, _) => const AddSessionScreen()),
+      GoRoute(
+          path: '/coach/sessions/:sessionId/attendance',
+          builder: (_, state) => MarkAttendanceScreen(
+              sessionId: state.pathParameters['sessionId']!)),
+      GoRoute(
+          path: '/coach/sessions/:sessionId/qr',
+          builder: (_, state) =>
+              QrGeneratorScreen(sessionId: state.pathParameters['sessionId']!)),
+      GoRoute(
+          path: '/coach/video/:id',
+          builder: (_, state) =>
+              VideoDetailScreen(video: state.extra as VideoAnalysisModel)),
+      GoRoute(
+          path: '/coach/players/:id',
+          builder: (_, state) => PlayerDetailScreen(
+                playerId: state.pathParameters['id']!,
+                backRoute: '/coach/players',
+              )),
+
+      // Player
+      GoRoute(path: '/player/scan', builder: (_, _) => const QrScannerScreen()),
     ],
   );
 }

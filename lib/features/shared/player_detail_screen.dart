@@ -558,9 +558,9 @@ class _MiniStat extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6F9),
+        color: AppTheme.surfaceAlt,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: AppTheme.borderDark),
       ),
       child: Text('$label $value',
           style: const TextStyle(
@@ -915,12 +915,12 @@ class _AwardBadgeSheetState extends State<_AwardBadgeSheet> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.accentAmber.withValues(alpha: 0.15)
-                        : Colors.white,
+                        : AppTheme.surfaceAlt,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                         color: isSelected
                             ? AppTheme.accentAmber
-                            : const Color(0xFFE0E0E0),
+                            : AppTheme.borderDark,
                         width: isSelected ? 2 : 1),
                   ),
                   child: Row(
@@ -1155,7 +1155,7 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 64, color: Colors.grey.withValues(alpha: 0.35)),
+          Icon(icon, size: 64, color: AppTheme.textSubtle),
           const SizedBox(height: 12),
           Text(message,
               style: const TextStyle(color: AppTheme.textGrey),

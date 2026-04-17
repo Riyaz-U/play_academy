@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/session_provider.dart';
@@ -38,10 +39,17 @@ class _PlayerScheduleScreenState extends State<PlayerScheduleScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('Schedule (${filtered.length})')),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/player/scan'),
+        icon: const Icon(Icons.qr_code_scanner),
+        label: const Text('Scan QR'),
+        backgroundColor: AppTheme.primaryGreen,
+        foregroundColor: Colors.white,
+      ),
       body: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: _Filter.values
@@ -72,7 +80,7 @@ class _PlayerScheduleScreenState extends State<PlayerScheduleScreen> {
                       children: [
                         Icon(Icons.calendar_month_outlined,
                             size: 72,
-                            color: Colors.grey.withValues(alpha: 0.4)),
+                            color: AppTheme.textSubtle),
                         const SizedBox(height: 12),
                         Text(
                           _filter == _Filter.upcoming

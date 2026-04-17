@@ -34,9 +34,11 @@ class CoachesScreen extends StatelessWidget {
                   const Text('No coaches yet',
                       style: TextStyle(color: AppTheme.textGrey)),
                   const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => context.push('/org/coaches/add'),
-                    child: const Text('Add First Coach'),
+                  Padding(padding:  const EdgeInsets.symmetric(horizontal: 16),
+                    child: ElevatedButton(
+                      onPressed: () => context.push('/org/coaches/add'),
+                      child: const Text('Add First Coach'),
+                    ),
                   ),
                 ],
               ),

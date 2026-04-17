@@ -302,13 +302,13 @@ class _EmptyCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 36, color: Colors.grey.withValues(alpha: 0.4)),
+          Icon(icon, size: 36, color: AppTheme.textSubtle),
           const SizedBox(height: 8),
           Text(message,
               style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
@@ -329,9 +329,9 @@ class _HighlightCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

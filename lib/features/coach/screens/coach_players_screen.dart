@@ -28,7 +28,7 @@ class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
         children: [
           // Category filter
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -57,7 +57,7 @@ class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
                       children: [
                         Icon(Icons.people_outline,
                             size: 72,
-                            color: Colors.grey.withValues(alpha: 0.4)),
+                            color: AppTheme.textSubtle),
                         const SizedBox(height: 12),
                         const Text('No players found',
                             style: TextStyle(color: AppTheme.textGrey)),

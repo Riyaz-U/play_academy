@@ -284,7 +284,7 @@ class _EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.videocam_outlined,
-                size: 72, color: Colors.grey.withValues(alpha: 0.35)),
+                size: 72, color: AppTheme.textSubtle),
             const SizedBox(height: 16),
             const Text('No footage yet',
                 style: TextStyle(

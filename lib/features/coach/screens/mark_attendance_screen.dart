@@ -147,6 +147,12 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code),
+            tooltip: 'QR Check-in',
+            onPressed: () =>
+                context.push('/coach/sessions/${widget.sessionId}/qr'),
+          ),
           if (session != null && !session.isCompleted)
             TextButton(
               onPressed: () => _completeSession(context),
@@ -160,7 +166,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
           // Session info
           if (session != null)
             Container(
-              color: Colors.white,
+              color: AppTheme.cardDark,
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
@@ -186,7 +192,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
             ),
           // Summary chips
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Row(
               children: [

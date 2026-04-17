@@ -27,7 +27,7 @@ class PlayerAttendanceScreen extends StatelessWidget {
         children: [
           // Summary header
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
@@ -109,7 +109,7 @@ class PlayerAttendanceScreen extends StatelessWidget {
                       children: [
                         Icon(Icons.check_circle_outline,
                             size: 72,
-                            color: Colors.grey.withValues(alpha: 0.4)),
+                            color: AppTheme.textSubtle),
                         const SizedBox(height: 12),
                         const Text('No attendance records yet',
                             style: TextStyle(color: AppTheme.textGrey)),

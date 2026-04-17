@@ -50,7 +50,7 @@ class _PlayerPaymentsScreenState extends State<PlayerPaymentsScreen> {
         children: [
           // Summary banner
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
               children: [
@@ -74,7 +74,7 @@ class _PlayerPaymentsScreenState extends State<PlayerPaymentsScreen> {
           ),
           // Filter tabs
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
             child: Row(
               children: [
@@ -101,7 +101,7 @@ class _PlayerPaymentsScreenState extends State<PlayerPaymentsScreen> {
                       children: [
                         Icon(Icons.payment_outlined,
                             size: 72,
-                            color: Colors.grey.withValues(alpha: 0.4)),
+                            color: AppTheme.textSubtle),
                         const SizedBox(height: 12),
                         Text(
                           _showPending

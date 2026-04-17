@@ -42,7 +42,7 @@ class _CoachSessionsScreenState extends State<CoachSessionsScreen> {
         children: [
           // Filter tabs
           Container(
-            color: Colors.white,
+            color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: _Filter.values
@@ -73,7 +73,7 @@ class _CoachSessionsScreenState extends State<CoachSessionsScreen> {
                       children: [
                         Icon(Icons.calendar_today_outlined,
                             size: 72,
-                            color: Colors.grey.withValues(alpha: 0.4)),
+                            color: AppTheme.textSubtle),
                         const SizedBox(height: 12),
                         const Text('No sessions',
                             style: TextStyle(color: AppTheme.textGrey)),

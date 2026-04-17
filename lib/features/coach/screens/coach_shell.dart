@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/dashboard_provider.dart';
 import '../../../providers/drill_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/video_provider.dart';
@@ -28,6 +29,7 @@ class _CoachShellState extends State<CoachShell> {
       context.read<SessionProvider>().listenToUpcoming(branchId);
       context.read<DrillProvider>().listenByBranch(branchId);
       context.read<VideoProvider>().listenByBranch(branchId);
+      context.read<DashboardProvider>().load(branchId);
     });
   }
 

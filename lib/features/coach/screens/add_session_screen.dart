@@ -280,12 +280,12 @@ class _TypeButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? AppTheme.primaryGreen.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.05),
+              : AppTheme.surfaceAlt,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
               color: selected
                   ? AppTheme.primaryGreen
-                  : Colors.grey.withValues(alpha: 0.3)),
+                  : AppTheme.borderDark),
         ),
         child: Column(
           children: [

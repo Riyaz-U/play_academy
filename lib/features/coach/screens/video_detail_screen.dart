@@ -230,7 +230,7 @@ class _AnnotationsSectionState extends State<_AnnotationsSection> {
                   children: [
                     Icon(Icons.comment_outlined,
                         size: 48,
-                        color: Colors.grey.withValues(alpha: 0.35)),
+                        color: AppTheme.textSubtle),
                     const SizedBox(height: 12),
                     const Text('No annotations yet',
                         style: TextStyle(color: AppTheme.textGrey)),
@@ -310,9 +310,9 @@ class _AnnotationCard extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: AppTheme.borderDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,9 +440,9 @@ class _AddAnnotationFormState extends State<_AddAnnotationForm> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.15)),
+        border: Border.all(color: AppTheme.borderDark),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
