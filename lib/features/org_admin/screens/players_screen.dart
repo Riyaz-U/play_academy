@@ -121,6 +121,7 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
+                          onTap: () => context.push('/org/players/${p.uid}'),
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           leading: CircleAvatar(

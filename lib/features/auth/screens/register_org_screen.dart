@@ -145,7 +145,15 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen,
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen,
+                      AppTheme.darkGreen,
+                      Color(0xFF022C22),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Column(

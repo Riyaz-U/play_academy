@@ -70,7 +70,11 @@ class CoachDashboard extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
+                  colors: [
+                    AppTheme.primaryGreen,
+                    AppTheme.darkGreen,
+                    Color(0xFF022C22),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

@@ -18,11 +18,16 @@ import '../../features/coach/screens/sessions_screen.dart';
 import '../../features/coach/screens/add_session_screen.dart';
 import '../../features/coach/screens/mark_attendance_screen.dart';
 import '../../features/coach/screens/coach_players_screen.dart';
+import '../../features/coach/screens/drills_screen.dart';
+import '../../features/coach/screens/video_analysis_screen.dart';
+import '../../features/coach/screens/video_detail_screen.dart';
+import '../../models/video_analysis_model.dart';
 import '../../features/player/screens/player_shell.dart';
 import '../../features/player/screens/player_dashboard.dart';
 import '../../features/player/screens/player_schedule_screen.dart';
 import '../../features/player/screens/player_attendance_screen.dart';
 import '../../features/player/screens/player_payments_screen.dart';
+import '../../features/shared/player_detail_screen.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
 final _orgAdminShellKey = GlobalKey<NavigatorState>();
@@ -111,6 +116,14 @@ GoRouter createRouter(AuthProvider authProvider) {
                 builder: (_, state) => AddEditPlayerScreen(
                     playerId: state.pathParameters['id']),
               ),
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: _rootKey,
+                builder: (_, state) => PlayerDetailScreen(
+                  playerId: state.pathParameters['id']!,
+                  backRoute: '/org/players',
+                ),
+              ),
             ],
           ),
           GoRoute(
@@ -158,8 +171,35 @@ GoRouter createRouter(AuthProvider authProvider) {
             ],
           ),
           GoRoute(
-              path: '/coach/players',
-              builder: (_, _) => const CoachPlayersScreen()),
+              path: '/coach/drills',
+              builder: (_, _) => const DrillsScreen()),
+          GoRoute(
+            path: '/coach/video',
+            builder: (_, _) => const VideoAnalysisScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: _rootKey,
+                builder: (_, state) => VideoDetailScreen(
+                  video: state.extra as VideoAnalysisModel,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/coach/players',
+            builder: (_, _) => const CoachPlayersScreen(),
+            routes: [
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: _rootKey,
+                builder: (_, state) => PlayerDetailScreen(
+                  playerId: state.pathParameters['id']!,
+                  backRoute: '/coach/players',
+                ),
+              ),
+            ],
+          ),
         ],
       ),
 

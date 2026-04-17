@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/drill_provider.dart';
 import '../../../providers/player_provider.dart';
+import '../../../providers/video_provider.dart';
 import '../../../providers/session_provider.dart';
 
 class CoachShell extends StatefulWidget {
@@ -24,6 +26,8 @@ class _CoachShellState extends State<CoachShell> {
       context.read<PlayerProvider>().listenByBranch(branchId);
       context.read<SessionProvider>().listenToSessions(branchId);
       context.read<SessionProvider>().listenToUpcoming(branchId);
+      context.read<DrillProvider>().listenByBranch(branchId);
+      context.read<VideoProvider>().listenByBranch(branchId);
     });
   }
 
@@ -31,6 +35,8 @@ class _CoachShellState extends State<CoachShell> {
     final loc = GoRouterState.of(context).matchedLocation;
     if (loc.startsWith('/coach/sessions')) return 1;
     if (loc.startsWith('/coach/players')) return 2;
+    if (loc.startsWith('/coach/drills')) return 3;
+    if (loc.startsWith('/coach/video')) return 4;
     return 0;
   }
 
@@ -48,6 +54,10 @@ class _CoachShellState extends State<CoachShell> {
               context.go('/coach/sessions');
             case 2:
               context.go('/coach/players');
+            case 3:
+              context.go('/coach/drills');
+            case 4:
+              context.go('/coach/video');
           }
         },
         destinations: const [
@@ -65,6 +75,16 @@ class _CoachShellState extends State<CoachShell> {
             icon: Icon(Icons.people_outlined),
             selectedIcon: Icon(Icons.people),
             label: 'Players',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.sports_gymnastics_outlined),
+            selectedIcon: Icon(Icons.sports_gymnastics),
+            label: 'Drills',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.videocam_outlined),
+            selectedIcon: Icon(Icons.videocam),
+            label: 'Video',
           ),
         ],
       ),

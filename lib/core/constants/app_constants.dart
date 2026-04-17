@@ -8,6 +8,12 @@ class AppConstants {
   static const String sessionsCollection = 'sessions';
   static const String attendanceCollection = 'attendance';
   static const String paymentsCollection = 'payments';
+  static const String statsHistoryCollection = 'statsHistory';
+  static const String badgesCollection = 'badges';
+  static const String drillsCollection = 'drills';
+  static const String videoAnalysisCollection = 'videoAnalysis';
+  static const String annotationsCollection = 'annotations';
+  static const String qrSessionsCollection = 'qrSessions';
 
   // ── Roles ─────────────────────────────────────────────
   static const String roleOrgAdmin = 'org_admin';

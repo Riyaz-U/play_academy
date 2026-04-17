@@ -62,8 +62,12 @@ class OrgDashboard extends StatelessWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen,
+                      AppTheme.darkGreen,
+                      const Color(0xFF022C22),
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -126,19 +130,19 @@ class OrgDashboard extends StatelessWidget {
                     label: 'Branches',
                     value: '${branches.length}',
                     icon: Icons.account_tree,
-                    color: AppTheme.primaryGreen,
+                    color: AppTheme.neonGreen,
                   ),
                   StatCard(
                     label: 'Players',
                     value: '${players.length}',
                     icon: Icons.people,
-                    color: Colors.blue.shade600,
+                    color: AppTheme.neonCyan,
                   ),
                   StatCard(
                     label: 'Coaches',
                     value: '${coaches.length}',
                     icon: Icons.sports,
-                    color: AppTheme.accentAmber,
+                    color: AppTheme.neonPurple,
                   ),
                 ],
               ),
@@ -281,9 +285,9 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Column(
           children: [

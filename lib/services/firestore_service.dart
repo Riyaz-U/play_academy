@@ -5,9 +5,14 @@ import '../models/branch_model.dart';
 import '../models/user_model.dart';
 import '../models/coach_model.dart';
 import '../models/player_model.dart';
+import '../models/stats_history_model.dart';
+import '../models/badge_model.dart';
+import '../models/drill_model.dart';
 import '../models/session_model.dart';
 import '../models/attendance_model.dart';
 import '../models/payment_model.dart';
+import '../models/video_analysis_model.dart';
+import '../models/qr_session_model.dart';
 import '../core/constants/app_constants.dart';
 
 class FirestoreService {
@@ -125,6 +130,77 @@ class FirestoreService {
   Future<void> updatePlayerDoc(String uid, Map<String, dynamic> data) =>
       _db.collection(AppConstants.playersCollection).doc(uid).update(data);
 
+  // ── Stats History (subcollection of players) ───────────
+  Future<void> addStatsHistory(
+      String playerId, Map<String, dynamic> data) async {
+    await _db
+        .collection(AppConstants.playersCollection)
+        .doc(playerId)
+        .collection(AppConstants.statsHistoryCollection)
+        .add(data);
+  }
+
+  Stream<List<StatsHistoryModel>> streamStatsHistory(String playerId) => _db
+      .collection(AppConstants.playersCollection)
+      .doc(playerId)
+      .collection(AppConstants.statsHistoryCollection)
+      .orderBy('recordedAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => StatsHistoryModel.fromMap(d.data(), d.id))
+          .toList());
+
+  Future<void> deleteStatsHistory(String playerId, String entryId) => _db
+      .collection(AppConstants.playersCollection)
+      .doc(playerId)
+      .collection(AppConstants.statsHistoryCollection)
+      .doc(entryId)
+      .delete();
+
+  // ── Badges (subcollection of players) ──────────────────
+  Future<void> awardBadge(String playerId, Map<String, dynamic> data) => _db
+      .collection(AppConstants.playersCollection)
+      .doc(playerId)
+      .collection(AppConstants.badgesCollection)
+      .add(data);
+
+  Stream<List<BadgeModel>> streamBadges(String playerId) => _db
+      .collection(AppConstants.playersCollection)
+      .doc(playerId)
+      .collection(AppConstants.badgesCollection)
+      .orderBy('awardedAt', descending: true)
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => BadgeModel.fromMap(d.data(), d.id))
+          .toList());
+
+  Future<void> deleteBadge(String playerId, String badgeId) => _db
+      .collection(AppConstants.playersCollection)
+      .doc(playerId)
+      .collection(AppConstants.badgesCollection)
+      .doc(badgeId)
+      .delete();
+
+  // ── Drills ─────────────────────────────────────────────
+  Future<String> createDrill(Map<String, dynamic> data) async {
+    final doc = await _db.collection(AppConstants.drillsCollection).add(data);
+    return doc.id;
+  }
+
+  Future<void> updateDrill(String id, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.drillsCollection).doc(id).update(data);
+
+  Future<void> deleteDrill(String id) =>
+      _db.collection(AppConstants.drillsCollection).doc(id).delete();
+
+  Stream<List<DrillModel>> streamDrillsByBranch(String branchId) => _db
+      .collection(AppConstants.drillsCollection)
+      .where('branchId', isEqualTo: branchId)
+      .orderBy('createdAt', descending: true)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => DrillModel.fromMap(d.data(), d.id)).toList());
+
   Future<void> deletePlayer(String uid) async {
     await _db.collection(AppConstants.playersCollection).doc(uid).delete();
     await _db.collection(AppConstants.usersCollection).doc(uid).delete();
@@ -202,6 +278,26 @@ class FirestoreService {
     await batch.commit();
   }
 
+  /// All attendance records for a branch, optionally filtered to [since].
+  Stream<List<AttendanceModel>> streamAttendanceByBranch(
+    String branchId, {
+    DateTime? since,
+  }) {
+    var query = _db
+        .collection(AppConstants.attendanceCollection)
+        .where('branchId', isEqualTo: branchId);
+    if (since != null) {
+      query = query.where('markedAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(since));
+    }
+    return query
+        .orderBy('markedAt', descending: true)
+        .snapshots()
+        .map((s) => s.docs
+            .map((d) => AttendanceModel.fromMap(d.data(), d.id))
+            .toList());
+  }
+
   Stream<List<AttendanceModel>> streamSessionAttendance(String sessionId) =>
       _db
           .collection(AppConstants.attendanceCollection)
@@ -232,6 +328,16 @@ class FirestoreService {
   Future<void> updatePayment(String id, Map<String, dynamic> data) =>
       _db.collection(AppConstants.paymentsCollection).doc(id).update(data);
 
+  Stream<List<PaymentModel>> streamPaymentsByBranch(String branchId) =>
+      _db
+          .collection(AppConstants.paymentsCollection)
+          .where('branchId', isEqualTo: branchId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => PaymentModel.fromMap(d.data(), d.id))
+              .toList());
+
   Stream<List<PaymentModel>> streamPaymentsByPlayer(String playerId) =>
       _db
           .collection(AppConstants.paymentsCollection)
@@ -242,13 +348,102 @@ class FirestoreService {
               .map((d) => PaymentModel.fromMap(d.data(), d.id))
               .toList());
 
-  Stream<List<PaymentModel>> streamPaymentsByBranch(String branchId) =>
+  // ── Video Analysis ─────────────────────────────────────
+
+  Future<String> createVideoAnalysis(Map<String, dynamic> data) async {
+    final doc =
+        await _db.collection(AppConstants.videoAnalysisCollection).add(data);
+    return doc.id;
+  }
+
+  Future<void> updateVideoAnalysis(String id, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.videoAnalysisCollection).doc(id).update(data);
+
+  Future<void> deleteVideoAnalysis(String id) =>
+      _db.collection(AppConstants.videoAnalysisCollection).doc(id).delete();
+
+  Stream<List<VideoAnalysisModel>> streamVideoAnalysisByBranch(
+          String branchId) =>
       _db
-          .collection(AppConstants.paymentsCollection)
+          .collection(AppConstants.videoAnalysisCollection)
           .where('branchId', isEqualTo: branchId)
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => PaymentModel.fromMap(d.data(), d.id))
+              .map((d) => VideoAnalysisModel.fromMap(d.data(), d.id))
               .toList());
+
+  // ── Annotations (subcollection of videoAnalysis) ───────
+
+  Future<String> addAnnotation(
+      String videoId, Map<String, dynamic> data) async {
+    final doc = await _db
+        .collection(AppConstants.videoAnalysisCollection)
+        .doc(videoId)
+        .collection(AppConstants.annotationsCollection)
+        .add(data);
+    return doc.id;
+  }
+
+  Stream<List<VideoAnnotation>> streamAnnotations(String videoId) => _db
+      .collection(AppConstants.videoAnalysisCollection)
+      .doc(videoId)
+      .collection(AppConstants.annotationsCollection)
+      .orderBy('timestamp')
+      .snapshots()
+      .map((s) => s.docs
+          .map((d) => VideoAnnotation.fromMap(d.data(), d.id))
+          .toList());
+
+  Future<void> deleteAnnotation(String videoId, String annotationId) => _db
+      .collection(AppConstants.videoAnalysisCollection)
+      .doc(videoId)
+      .collection(AppConstants.annotationsCollection)
+      .doc(annotationId)
+      .delete();
+
+  // ── QR Sessions ────────────────────────────────────────
+
+  Future<String> createQrSession(Map<String, dynamic> data) async {
+    final doc =
+        await _db.collection(AppConstants.qrSessionsCollection).add(data);
+    return doc.id;
+  }
+
+  Future<void> deactivateQrSession(String id) =>
+      _db.collection(AppConstants.qrSessionsCollection).doc(id).update({
+        'isActive': false,
+      });
+
+  /// Looks up a QR session by its unique token string.
+  Future<QrSessionModel?> getQrSessionByToken(String token) async {
+    final snap = await _db
+        .collection(AppConstants.qrSessionsCollection)
+        .where('token', isEqualTo: token)
+        .where('isActive', isEqualTo: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    final doc = snap.docs.first;
+    return QrSessionModel.fromMap(doc.data(), doc.id);
+  }
+
+  /// Live stream so the coach UI can react when the QR is deactivated.
+  Stream<QrSessionModel?> streamQrSession(String id) => _db
+      .collection(AppConstants.qrSessionsCollection)
+      .doc(id)
+      .snapshots()
+      .map((doc) =>
+          doc.exists ? QrSessionModel.fromMap(doc.data()!, doc.id) : null);
+
+  // ── Attendance (single record) ─────────────────────────
+
+  /// Saves or overwrites a single attendance record (used for QR check-in).
+  Future<void> saveAttendance(Map<String, dynamic> data) {
+    final docId = '${data['sessionId']}_${data['playerId']}';
+    return _db
+        .collection(AppConstants.attendanceCollection)
+        .doc(docId)
+        .set(data, SetOptions(merge: true));
+  }
 }

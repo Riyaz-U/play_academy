@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -71,6 +72,7 @@ class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: ListTile(
+                          onTap: () => context.push('/coach/players/${p.uid}'),
                           leading: CircleAvatar(
                             backgroundColor:
                                 AppTheme.primaryGreen.withValues(alpha: 0.1),
