@@ -37,9 +37,12 @@ class BranchesScreen extends StatelessWidget {
                       style: TextStyle(
                           fontSize: 16, color: AppTheme.textGrey)),
                   const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => context.push('/org/branches/add'),
-                    child: const Text('Create First Branch'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ElevatedButton(
+                      onPressed: () => context.push('/org/branches/add'),
+                      child: const Text('Create First Branch'),
+                    ),
                   ),
                 ],
               ),
