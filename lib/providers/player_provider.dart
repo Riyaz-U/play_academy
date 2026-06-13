@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/player_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -110,7 +112,8 @@ class PlayerProvider extends ChangeNotifier {
       await _firestoreService.createPlayerDoc(uid, playerDoc.toMap());
       return true;
     } catch (e) {
-      _error = e.toString();
+      log('Error creating player: $e');
+      _error = _mapError(e);
       return false;
     } finally {
       _isLoading = false;
@@ -148,7 +151,7 @@ class PlayerProvider extends ChangeNotifier {
           .update({'name': name, 'branchId': branchId});
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _mapError(e);
       return false;
     } finally {
       _isLoading = false;
@@ -164,12 +167,44 @@ class PlayerProvider extends ChangeNotifier {
       await _firestoreService.deletePlayer(uid);
       return true;
     } catch (e) {
-      _error = e.toString();
+      _error = _mapError(e);
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  String _mapError(Object e) {
+    if (e is FirebaseAuthException) {
+      switch (e.code) {
+        case 'email-already-in-use':
+          return 'A player with this email already exists.';
+        case 'invalid-email':
+          return 'Please enter a valid email address.';
+        case 'weak-password':
+          return 'Password must be at least 6 characters.';
+        case 'operation-not-allowed':
+          return 'Account creation is disabled. Contact support.';
+        case 'network-request-failed':
+          return 'No internet connection. Please try again.';
+        default:
+          return e.message ?? 'Authentication failed. Please try again.';
+      }
+    }
+    if (e is FirebaseException) {
+      switch (e.code) {
+        case 'permission-denied':
+          return 'You do not have permission to perform this action.';
+        case 'unavailable':
+          return 'Service temporarily unavailable. Please try again.';
+        case 'not-found':
+          return 'Player record not found.';
+        default:
+          return e.message ?? 'A database error occurred. Please try again.';
+      }
+    }
+    return 'Something went wrong. Please try again.';
   }
 
   @override

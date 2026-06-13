@@ -113,6 +113,7 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
                 controller: _nameCtrl,
@@ -194,8 +195,7 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
               ],
               if (provider.error != null) ...[
                 const SizedBox(height: 12),
-                Text(provider.error!,
-                    style: const TextStyle(color: AppTheme.errorRed)),
+                Text(provider.error!, style: const TextStyle(color: AppTheme.errorRed)),
               ],
               const SizedBox(height: 32),
               SizedBox(
