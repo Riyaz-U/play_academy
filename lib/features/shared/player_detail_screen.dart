@@ -69,19 +69,19 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
             expandedHeight: 200,
             pinned: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back, color: AppTheme.onPrimary),
               onPressed: () => context.go(widget.backRoute),
             ),
             actions: canEdit
                 ? [
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined),
+                      icon: const Icon(Icons.edit_outlined, color: Colors.black54),
                       tooltip: 'Edit',
                       onPressed: () => context.push(
                           '${widget.backRoute}/edit/${player.uid}'),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline),
+                      icon: const Icon(Icons.delete_outline, color: Colors.black54),
                       tooltip: 'Delete',
                       onPressed: () => _confirmDelete(context, player),
                     ),
@@ -94,7 +94,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
               controller: _tab,
               indicatorColor: Colors.white,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
+              unselectedLabelColor: Colors.white.withAlpha(200),
               tabs: const [
                 Tab(text: 'Overview'),
                 Tab(text: 'History'),
@@ -165,22 +165,21 @@ class _PlayerHeader extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 56, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
       child: Row(
         children: [
           Container(
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white38, width: 2),
+              border: Border.all(color: AppTheme.onPrimary.withValues(alpha: 0.7), width: 2),
             ),
             child: Center(
               child: Text(
                 '#${player.jerseyNumber}',
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: AppTheme.onPrimary.withValues(alpha: 0.7),
                     fontSize: 20,
                     fontWeight: FontWeight.bold),
               ),
@@ -194,14 +193,14 @@ class _PlayerHeader extends StatelessWidget {
               children: [
                 Text(player.name,
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
+                        color: AppTheme.onPrimary,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
                 Text(
                   '${player.position} • ${player.category} • Age ${player.age}',
                   style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8), fontSize: 13),
+                      color: AppTheme.onPrimary.withValues(alpha: 0.8), fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 _OverallChip(overall: player.stats.overall),
@@ -228,7 +227,7 @@ class _OverallChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: AppTheme.onPrimary.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withValues(alpha: 0.6)),
       ),
@@ -423,7 +422,7 @@ class _HistoryTab extends StatelessWidget {
                   icon: const Icon(Icons.add),
                   label: const Text('Add Entry'),
                   backgroundColor: AppTheme.primaryGreen,
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppTheme.onPrimary,
                 )
               : null,
           body: snap.connectionState == ConnectionState.waiting
