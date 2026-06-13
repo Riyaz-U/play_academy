@@ -82,37 +82,54 @@ class OrgDashboard extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Metric cards 2×2
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.6,
+              Column(
                 children: [
-                  _MetricCard(
-                    label: 'Branches',
-                    value: '${branches.length}',
-                    icon: Icons.account_tree,
-                    color: AppTheme.neonGreen,
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Branches',
+                            value: '${branches.length}',
+                            icon: Icons.account_tree,
+                            color: AppTheme.neonGreen,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Players',
+                            value: '${players.length}',
+                            icon: Icons.people,
+                            color: AppTheme.neonCyan,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  _MetricCard(
-                    label: 'Players',
-                    value: '${players.length}',
-                    icon: Icons.people,
-                    color: AppTheme.neonCyan,
-                  ),
-                  _MetricCard(
-                    label: 'Coaches',
-                    value: '${coaches.length}',
-                    icon: Icons.sports,
-                    color: AppTheme.neonPurple,
-                  ),
-                  _MetricCard(
-                    label: 'Categories',
-                    value: '${categoryMap.length}',
-                    icon: Icons.category,
-                    color: AppTheme.accentAmber,
+                  const SizedBox(height: 12),
+                  IntrinsicHeight(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Coaches',
+                            value: '${coaches.length}',
+                            icon: Icons.sports,
+                            color: AppTheme.neonPurple,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Categories',
+                            value: '${categoryMap.length}',
+                            icon: Icons.category,
+                            color: AppTheme.accentAmber,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -335,7 +352,7 @@ class _MetricCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(6),
@@ -345,6 +362,7 @@ class _MetricCard extends StatelessWidget {
             ),
             child: Icon(icon, color: color, size: 18),
           ),
+          const SizedBox(height: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
