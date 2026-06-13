@@ -36,7 +36,7 @@ class _CoachSessionsScreenState extends State<CoachSessionsScreen> {
         icon: const Icon(Icons.add),
         label: const Text('New Session'),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
       body: Column(
         children: [

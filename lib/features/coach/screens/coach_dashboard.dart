@@ -186,9 +186,9 @@ class CoachDashboard extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/coach/sessions/add'),
         icon: const Icon(Icons.add),
-        label: const Text('New Session'),
+        label: const Text('New Session', style: TextStyle(color: AppTheme.onPrimary)),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
     );
   }
@@ -634,7 +634,7 @@ class _EmptyState extends StatelessWidget {
                     minimumSize: Size.zero,
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 10)),
-                child: Text(actionLabel!),
+                child: Text(actionLabel!, style: TextStyle(color: AppTheme.onPrimary)),
               ),
             ],
           ],

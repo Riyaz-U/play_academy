@@ -22,13 +22,13 @@ class DrillsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Drills Library'),
       ),
-      floatingActionButton: canEdit
+      floatingActionButton: canEdit && drills.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () => _showDrillSheet(context, null),
               icon: const Icon(Icons.add),
               label: const Text('New Drill'),
               backgroundColor: AppTheme.primaryGreen,
-              foregroundColor: Colors.white,
+              foregroundColor: AppTheme.onPrimary,
             )
           : null,
       body: loading
@@ -432,7 +432,7 @@ class _EmptyState extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                     minimumSize: Size.zero,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12)),
+                        horizontal: 20, vertical: 20)),
               ),
             ],
           ],

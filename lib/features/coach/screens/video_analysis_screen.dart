@@ -301,12 +301,12 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: onAdd,
-                icon: const Icon(Icons.video_library_outlined),
-                label: const Text('Add First Video'),
+                icon: const Icon(Icons.video_library_outlined, color: AppTheme.onPrimary),
+                label: const Text('Add First Video', style: TextStyle(color: AppTheme.onPrimary)),
                 style: ElevatedButton.styleFrom(
                     minimumSize: Size.zero,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12)),
+                        horizontal: 20, vertical: 20)),
               ),
             ],
           ],

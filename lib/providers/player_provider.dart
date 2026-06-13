@@ -144,11 +144,6 @@ class PlayerProvider extends ChangeNotifier {
         'category': category,
         'branchId': branchId,
       });
-      // Keep user doc name in sync
-      await FirebaseFirestore.instance
-          .collection(AppConstants.usersCollection)
-          .doc(uid)
-          .update({'name': name, 'branchId': branchId});
       return true;
     } catch (e) {
       _error = _mapError(e);
