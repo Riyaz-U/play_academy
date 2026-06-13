@@ -135,7 +135,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(_isEditing ? 'Save Changes' : 'Create Branch', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary),
+                      : Text(_isEditing ? 'Save Changes' : 'Create Branch', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
                 ),
               ),
             ],
