@@ -145,26 +145,18 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      AppTheme.primaryGreen,
-                      AppTheme.darkGreen,
-                      Color(0xFF022C22),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppTheme.primaryGreen,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.sports_soccer, color: Colors.white, size: 32),
+                    Icon(Icons.sports_soccer, color: AppTheme.darkGreen, size: 32),
                     SizedBox(height: 8),
                     Text(
                       'Create your Academy',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.darkGreen,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -173,7 +165,7 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
                     Text(
                       'Set up your organization to get started',
                       style: TextStyle(
-                          color: Colors.white70, fontSize: 13),
+                          color: AppTheme.darkGreen, fontSize: 13),
                     ),
                   ],
                 ),

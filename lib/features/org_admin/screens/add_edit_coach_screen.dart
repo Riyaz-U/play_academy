@@ -210,7 +210,7 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(_isEditing ? 'Save Changes' : 'Create Coach'),
+                      : Text(_isEditing ? 'Save Changes' : 'Create Coach', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
                 ),
               ),
             ],

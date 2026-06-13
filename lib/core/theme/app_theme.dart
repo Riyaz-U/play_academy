@@ -3,15 +3,16 @@ import 'package:flutter/services.dart';
 
 class AppTheme {
   // ── Brand ─────────────────────────────────────────────
-  static const Color primaryGreen = Color(0xFF059669); // brand-400 emerald
-  static const Color darkGreen = Color(0xFF047857);    // brand-500
+  static const Color primaryGreen = Color(0xFFB6EB35); // brand-400 emerald
+  static const Color darkGreen = Color(0xFF1E4A24);
+  static const Color onPrimary = Color(0xFF1E4A24);    // brand-500
   static const Color accentAmber = Color(0xFFFFB800);
   static const Color errorRed = Color(0xFFEF4444);
-  static const Color successGreen = Color(0xFF10B981);
+  static const Color successGreen = Color.fromARGB(255, 181, 226, 211);
   static const Color warningOrange = Color(0xFFF59E0B);
 
   // ── Neon accent colours (for stat cards, badges, highlights) ──
-  static const Color neonGreen = Color(0xFF059669);   // same as brand
+  static const Color neonGreen = Color(0xFFB6EB35);   // same as brand
   static const Color neonPink = Color(0xFFFF00FF);
   static const Color neonCyan = Color(0xFF00FFFF);
   static const Color neonPurple = Color(0xFFBF00FF);
@@ -71,7 +72,7 @@ class AppTheme {
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12)),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(

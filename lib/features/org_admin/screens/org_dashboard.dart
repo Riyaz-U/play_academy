@@ -202,7 +202,10 @@ class OrgDashboard extends StatelessWidget {
                         ElevatedButton.icon(
                           onPressed: () => context.push('/org/branches/add'),
                           icon: const Icon(Icons.add),
-                          label: const Text('Create First Branch'),
+                          label: const Padding(
+                            padding: EdgeInsets.only(right: 16, top: 10, bottom: 10),
+                            child: Text('Create First Branch', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
+                          ),
                           style: ElevatedButton.styleFrom(
                               minimumSize: Size.zero,
                               padding: const EdgeInsets.symmetric(
@@ -242,15 +245,7 @@ class _WelcomeBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            AppTheme.primaryGreen,
-            AppTheme.darkGreen,
-            Color(0xFF022C22),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppTheme.primaryGreen,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -258,15 +253,15 @@ class _WelcomeBanner extends StatelessWidget {
         children: [
           Text(today,
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                  color: AppTheme.onPrimary, fontSize: 12)),
           const SizedBox(height: 4),
           Text('Welcome back,',
               style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
+                  color: AppTheme.onPrimary, fontSize: 14)),
           Text(
             name,
             style: const TextStyle(
-                color: Colors.white,
+                color: AppTheme.onPrimary,
                 fontSize: 22,
                 fontWeight: FontWeight.bold),
           ),
@@ -298,16 +293,16 @@ class _BannerPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: AppTheme.onPrimary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: Colors.white),
+          Icon(icon, size: 13, color: AppTheme.onPrimary),
           const SizedBox(width: 4),
           Text(label,
-              style: const TextStyle(color: Colors.white, fontSize: 12)),
+              style: const TextStyle(color: AppTheme.onPrimary, fontSize: 12, fontWeight: FontWeight.w500)),
         ],
       ),
     );

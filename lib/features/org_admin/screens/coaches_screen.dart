@@ -20,7 +20,7 @@ class CoachesScreen extends StatelessWidget {
         icon: const Icon(Icons.sports),
         label: const Text('Add Coach'),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
       body: coaches.isEmpty
           ? Center(

@@ -22,7 +22,7 @@ class BranchesScreen extends StatelessWidget {
         icon: const Icon(Icons.add),
         label: const Text('Add Branch'),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
       body: branches.isEmpty
           ? Center(

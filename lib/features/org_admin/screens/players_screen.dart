@@ -39,7 +39,7 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
         icon: const Icon(Icons.person_add),
         label: const Text('Add Player'),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
       body: Column(
         children: [
