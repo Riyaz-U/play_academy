@@ -428,7 +428,7 @@ class _EmptyState extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: onAdd,
                 icon: const Icon(Icons.add),
-                label: const Text('Create First Drill', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
+                label: const Text('Create First Drill', style: TextStyle(color: AppTheme.onPrimary)),
                 style: ElevatedButton.styleFrom(
                     minimumSize: Size.zero,
                     padding: const EdgeInsets.symmetric(

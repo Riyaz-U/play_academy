@@ -28,7 +28,7 @@ class VideoAnalysisScreen extends StatelessWidget {
               icon: const Icon(Icons.video_library_outlined),
               label: const Text('Add Footage'),
               backgroundColor: AppTheme.primaryGreen,
-              foregroundColor: Colors.white,
+              foregroundColor: AppTheme.onPrimary,
             )
           : null,
       body: loading
