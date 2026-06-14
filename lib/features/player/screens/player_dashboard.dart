@@ -56,8 +56,8 @@ class PlayerDashboard extends StatelessWidget {
         actions: [
           PopupMenuButton<String>(
             icon: const CircleAvatar(
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
+              backgroundColor: AppTheme.primaryGreen,
+              child: Icon(Icons.person, color: AppTheme.onPrimary, size: 20),
             ),
             onSelected: (v) {
               if (v == 'logout') context.read<AuthProvider>().signOut();
@@ -85,15 +85,7 @@ class PlayerDashboard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    AppTheme.primaryGreen,
-                    AppTheme.darkGreen,
-                    Color(0xFF022C22),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppTheme.primaryGreen,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
@@ -105,7 +97,7 @@ class PlayerDashboard extends StatelessWidget {
                         width: 52,
                         height: 52,
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: AppTheme.onPrimary,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -114,7 +106,7 @@ class PlayerDashboard extends StatelessWidget {
                                 ? user!.name[0].toUpperCase()
                                 : '?',
                             style: const TextStyle(
-                                color: Colors.white,
+                                color: AppTheme.primaryGreen,
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold),
                           ),
@@ -128,7 +120,7 @@ class PlayerDashboard extends StatelessWidget {
                             Text(
                               user?.name ?? '',
                               style: const TextStyle(
-                                  color: Colors.white,
+                                  color: AppTheme.onPrimary,
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold),
                             ),
@@ -136,7 +128,7 @@ class PlayerDashboard extends StatelessWidget {
                             Text(
                               DateFormat('EEEE, d MMMM').format(now),
                               style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.75),
+                                  color: AppTheme.onPrimary.withValues(alpha: 0.75),
                                   fontSize: 12),
                             ),
                           ],
@@ -148,24 +140,24 @@ class PlayerDashboard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.15),
+                            color: AppTheme.onPrimary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3)),
+                                color: AppTheme.onPrimary.withValues(alpha: 0.3)),
                           ),
                           child: Column(
                             children: [
                               Text(
                                 '#${playerData.jerseyNumber}',
                                 style: const TextStyle(
-                                    color: Colors.white,
+                                    color: AppTheme.onPrimary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 playerData.position,
                                 style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.8),
+                                    color: AppTheme.onPrimary.withValues(alpha: 0.8),
                                     fontSize: 10),
                               ),
                             ],
@@ -560,17 +552,17 @@ class _StatPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.2),
+        color: AppTheme.onPrimary.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.white, size: 14),
+          Icon(icon, color: AppTheme.onPrimary, size: 14),
           const SizedBox(width: 4),
           Text(
             '$label $suffix',
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: const TextStyle(color: AppTheme.onPrimary, fontSize: 12),
           ),
         ],
       ),

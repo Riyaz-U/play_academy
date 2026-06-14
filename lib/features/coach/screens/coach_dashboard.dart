@@ -34,8 +34,8 @@ class CoachDashboard extends StatelessWidget {
         actions: [
           PopupMenuButton<String>(
             icon: const CircleAvatar(
-              backgroundColor: Colors.white24,
-              child: Icon(Icons.person, color: Colors.white, size: 20),
+              backgroundColor: AppTheme.primaryGreen,
+              child: Icon(Icons.person, color: AppTheme.onPrimary, size: 20),
             ),
             onSelected: (v) {
               if (v == 'logout') context.read<AuthProvider>().signOut();

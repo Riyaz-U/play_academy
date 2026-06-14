@@ -44,7 +44,7 @@ class _PlayerScheduleScreenState extends State<PlayerScheduleScreen> {
         icon: const Icon(Icons.qr_code_scanner),
         label: const Text('Scan QR'),
         backgroundColor: AppTheme.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppTheme.onPrimary,
       ),
       body: Column(
         children: [
