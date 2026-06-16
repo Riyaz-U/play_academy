@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/badge_model.dart';
 import '../../models/player_model.dart';
+import '../../models/sport_profile_model.dart';
 import '../../models/stats_history_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/player_provider.dart';
@@ -31,17 +33,32 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
   final _fs = FirestoreService();
   late final TabController _tab;
 
+  List<SportProfileModel> _profiles = [];
+  String? _selectedSport;
+  StreamSubscription<List<SportProfileModel>>? _profileSub;
+
   @override
   void initState() {
     super.initState();
     _tab = TabController(length: 4, vsync: this);
+    _profileSub = _fs
+        .streamSportProfiles(widget.playerId)
+        .listen((profiles) => setState(() {
+              _profiles = profiles;
+              _selectedSport ??=
+                  profiles.isNotEmpty ? profiles.first.sport : null;
+            }));
   }
 
   @override
   void dispose() {
     _tab.dispose();
+    _profileSub?.cancel();
     super.dispose();
   }
+
+  SportProfileModel? get _selectedProfile =>
+      _profiles.where((p) => p.sport == _selectedSport).firstOrNull;
 
   @override
   Widget build(BuildContext context) {
@@ -59,36 +76,49 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
     }
 
     final role = context.read<AuthProvider>().userModel?.role;
-    final canEdit = role == AppConstants.roleOrgAdmin || role == AppConstants.roleCoach;
+    final canEdit = role == AppConstants.roleOrgAdmin ||
+        role == AppConstants.roleCoach;
+    final profile = _selectedProfile;
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundGrey,
       body: NestedScrollView(
         headerSliverBuilder: (ctx, _) => [
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: _profiles.length > 1 ? 230 : 200,
             pinned: true,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: AppTheme.onPrimary),
+              icon:
+                  const Icon(Icons.arrow_back, color: AppTheme.onPrimary),
               onPressed: () => context.go(widget.backRoute),
             ),
             actions: canEdit
                 ? [
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined, color: Colors.black54),
+                      icon: const Icon(Icons.edit_outlined,
+                          color: Colors.black54),
                       tooltip: 'Edit',
-                      onPressed: () => context.push(
-                          '${widget.backRoute}/edit/${player.uid}'),
+                      onPressed: () => context
+                          .push('${widget.backRoute}/edit/${player.uid}'),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.black54),
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.black54),
                       tooltip: 'Delete',
-                      onPressed: () => _confirmDelete(context, player),
+                      onPressed: () =>
+                          _confirmDelete(context, player),
                     ),
                   ]
                 : null,
             flexibleSpace: FlexibleSpaceBar(
-              background: _PlayerHeader(player: player),
+              background: _PlayerHeader(
+                player: player,
+                profile: profile,
+                profiles: _profiles,
+                selectedSport: _selectedSport,
+                onSportChanged: (s) =>
+                    setState(() => _selectedSport = s),
+              ),
             ),
             bottom: TabBar(
               controller: _tab,
@@ -107,8 +137,13 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
         body: TabBarView(
           controller: _tab,
           children: [
-            _OverviewTab(player: player),
-            _HistoryTab(player: player, fs: _fs, canEdit: canEdit),
+            _OverviewTab(profile: profile, sport: _selectedSport),
+            _HistoryTab(
+                player: player,
+                fs: _fs,
+                canEdit: canEdit,
+                sport: _selectedSport,
+                currentStats: profile?.stats),
             _BadgesTab(player: player, fs: _fs, canEdit: canEdit),
             _InfoTab(player: player),
           ],
@@ -117,7 +152,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
     );
   }
 
-  Future<void> _confirmDelete(BuildContext context, PlayerModel player) async {
+  Future<void> _confirmDelete(
+      BuildContext context, PlayerModel player) async {
     final provider = context.read<PlayerProvider>();
     final router = GoRouter.of(context);
     final ok = await showDialog<bool>(
@@ -134,8 +170,8 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.errorRed,
                 minimumSize: Size.zero,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 10)),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Delete'),
           ),
@@ -149,11 +185,22 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
   }
 }
 
-// ── Player Header ───────────────────────────────────────
+// ── Player Header ─────────────────────────────────────────────────────────────
 
 class _PlayerHeader extends StatelessWidget {
   final PlayerModel player;
-  const _PlayerHeader({required this.player});
+  final SportProfileModel? profile;
+  final List<SportProfileModel> profiles;
+  final String? selectedSport;
+  final ValueChanged<String> onSportChanged;
+
+  const _PlayerHeader({
+    required this.player,
+    required this.profile,
+    required this.profiles,
+    required this.selectedSport,
+    required this.onSportChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -166,47 +213,113 @@ class _PlayerHeader extends StatelessWidget {
         ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.onPrimary.withValues(alpha: 0.7), width: 2),
-            ),
-            child: Center(
-              child: Text(
-                '#${player.jerseyNumber}',
-                style: TextStyle(
-                    color: AppTheme.onPrimary.withValues(alpha: 0.7),
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold),
+          Row(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: AppTheme.onPrimary.withValues(alpha: 0.7),
+                      width: 2),
+                ),
+                child: Center(
+                  child: profile != null
+                      ? Text(
+                          '#${profile!.jerseyNumber}',
+                          style: TextStyle(
+                              color: AppTheme.onPrimary
+                                  .withValues(alpha: 0.9),
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold),
+                        )
+                      : Text(
+                          player.name.isNotEmpty
+                              ? player.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                              color: AppTheme.onPrimary,
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(player.name,
+                        style: const TextStyle(
+                            color: AppTheme.onPrimary,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 4),
+                    Text(
+                      profile != null
+                          ? '${profile!.position} • ${profile!.category} • Age ${player.age}'
+                          : 'Age ${player.age}',
+                      style: TextStyle(
+                          color: AppTheme.onPrimary.withValues(alpha: 0.8),
+                          fontSize: 13),
+                    ),
+                    if (profile != null) ...[
+                      const SizedBox(height: 8),
+                      _OverallChip(overall: profile!.overall),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // Sport selector chips
+          if (profiles.length > 1) ...[
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: profiles.map((p) {
+                  final selected = p.sport == selectedSport;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () => onSportChanged(p.sport),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? AppTheme.onPrimary.withValues(alpha: 0.25)
+                              : AppTheme.onPrimary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: selected
+                                  ? AppTheme.onPrimary
+                                  : AppTheme.onPrimary
+                                      .withValues(alpha: 0.3),
+                              width: selected ? 1.5 : 1),
+                        ),
+                        child: Text(
+                          p.sport[0].toUpperCase() + p.sport.substring(1),
+                          style: TextStyle(
+                              color: AppTheme.onPrimary,
+                              fontSize: 12,
+                              fontWeight: selected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(player.name,
-                    style: const TextStyle(
-                        color: AppTheme.onPrimary,
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700)),
-                const SizedBox(height: 4),
-                Text(
-                  '${player.position} • ${player.category} • Age ${player.age}',
-                  style: TextStyle(
-                      color: AppTheme.onPrimary.withValues(alpha: 0.8), fontSize: 13),
-                ),
-                const SizedBox(height: 8),
-                _OverallChip(overall: player.stats.overall),
-              ],
-            ),
-          ),
+          ],
         ],
       ),
     );
@@ -239,7 +352,9 @@ class _OverallChip extends StatelessWidget {
           Text(
             'OVR ${overall.toStringAsFixed(0)}',
             style: TextStyle(
-                color: color, fontSize: 12, fontWeight: FontWeight.bold),
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -247,84 +362,100 @@ class _OverallChip extends StatelessWidget {
   }
 }
 
-// ── Overview Tab ────────────────────────────────────────
+// ── Overview Tab ──────────────────────────────────────────────────────────────
 
 class _OverviewTab extends StatelessWidget {
-  final PlayerModel player;
-  const _OverviewTab({required this.player});
+  final SportProfileModel? profile;
+  final String? sport;
+  const _OverviewTab({required this.profile, required this.sport});
+
+  static const List<Color> _statColors = [
+    Colors.blue,
+    Colors.orange,
+    Colors.green,
+    Colors.purple,
+    Colors.amber,
+    Colors.red,
+    Colors.teal,
+    Colors.pink,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final stats = player.stats;
+    if (profile == null || sport == null) {
+      return const Center(
+        child: Text('No sport enrollment found',
+            style: TextStyle(color: AppTheme.textGrey)),
+      );
+    }
+
+    final statKeys = AppConstants.sportStats[sport] ?? [];
+    final stats = profile!.stats;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           // Radar chart card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Text('Performance Radar',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: AppTheme.textDark)),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 220,
-                    child: RadarChart(
-                      RadarChartData(
-                        radarShape: RadarShape.polygon,
-                        tickCount: 4,
-                        gridBorderData: BorderSide(
-                            color: Colors.grey.shade300, width: 0.5),
-                        tickBorderData: BorderSide(
-                            color: Colors.grey.shade200, width: 0.5),
-                        radarBorderData: BorderSide(
-                            color: Colors.grey.shade400, width: 1),
-                        titlePositionPercentageOffset: 0.15,
-                        titleTextStyle: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textDark),
-                        getTitle: (index, angle) {
-                          const labels = [
-                            'PAC',
-                            'SHO',
-                            'PAS',
-                            'DRI',
-                            'DEF',
-                            'PHY'
-                          ];
-                          return RadarChartTitle(
-                              text: labels[index], angle: angle);
-                        },
-                        dataSets: [
-                          RadarDataSet(
-                            dataEntries: [
-                              RadarEntry(value: stats.pace.toDouble()),
-                              RadarEntry(value: stats.shooting.toDouble()),
-                              RadarEntry(value: stats.passing.toDouble()),
-                              RadarEntry(value: stats.dribbling.toDouble()),
-                              RadarEntry(value: stats.defending.toDouble()),
-                              RadarEntry(value: stats.physical.toDouble()),
-                            ],
-                            fillColor:
-                                AppTheme.primaryGreen.withValues(alpha: 0.2),
-                            borderColor: AppTheme.primaryGreen,
-                            borderWidth: 2,
-                            entryRadius: 4,
-                          ),
-                        ],
+          if (statKeys.length >= 3)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    const Text('Performance Radar',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                            color: AppTheme.textDark)),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 220,
+                      child: RadarChart(
+                        RadarChartData(
+                          radarShape: RadarShape.polygon,
+                          tickCount: 4,
+                          gridBorderData: BorderSide(
+                              color: Colors.grey.shade300, width: 0.5),
+                          tickBorderData: BorderSide(
+                              color: Colors.grey.shade200, width: 0.5),
+                          radarBorderData: BorderSide(
+                              color: Colors.grey.shade400, width: 1),
+                          titlePositionPercentageOffset: 0.15,
+                          titleTextStyle: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textDark),
+                          getTitle: (index, angle) {
+                            final label = index < statKeys.length
+                                ? statKeys[index]
+                                    .substring(0, 3)
+                                    .toUpperCase()
+                                : '';
+                            return RadarChartTitle(
+                                text: label, angle: angle);
+                          },
+                          dataSets: [
+                            RadarDataSet(
+                              dataEntries: statKeys
+                                  .map((k) => RadarEntry(
+                                      value:
+                                          (stats[k] ?? 50).toDouble()))
+                                  .toList(),
+                              fillColor: AppTheme.primaryGreen
+                                  .withValues(alpha: 0.2),
+                              borderColor: AppTheme.primaryGreen,
+                              borderWidth: 2,
+                              entryRadius: 4,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           const SizedBox(height: 12),
 
           // Stat bars card
@@ -332,22 +463,21 @@ class _OverviewTab extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Attributes',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 15,
-                            color: AppTheme.textDark)),
-                  ),
+                  const Text('Attributes',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppTheme.textDark)),
                   const SizedBox(height: 16),
-                  _StatBar(label: 'Pace', value: stats.pace, color: Colors.blue.shade600),
-                  _StatBar(label: 'Shooting', value: stats.shooting, color: Colors.orange.shade600),
-                  _StatBar(label: 'Passing', value: stats.passing, color: AppTheme.primaryGreen),
-                  _StatBar(label: 'Dribbling', value: stats.dribbling, color: Colors.purple.shade600),
-                  _StatBar(label: 'Defending', value: stats.defending, color: AppTheme.accentAmber),
-                  _StatBar(label: 'Physical', value: stats.physical, color: Colors.red.shade600),
+                  ...statKeys.asMap().entries.map((e) => _StatBar(
+                        label: e.value[0].toUpperCase() +
+                            e.value.substring(1),
+                        value: stats[e.value] ?? 50,
+                        color: _statColors[
+                            e.key % _statColors.length],
+                      )),
                 ],
               ),
             ),
@@ -362,7 +492,8 @@ class _StatBar extends StatelessWidget {
   final String label;
   final int value;
   final Color color;
-  const _StatBar({required this.label, required this.value, required this.color});
+  const _StatBar(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -399,24 +530,35 @@ class _StatBar extends StatelessWidget {
   }
 }
 
-// ── History Tab ─────────────────────────────────────────
+// ── History Tab ───────────────────────────────────────────────────────────────
 
 class _HistoryTab extends StatelessWidget {
   final PlayerModel player;
   final FirestoreService fs;
   final bool canEdit;
-  const _HistoryTab(
-      {required this.player, required this.fs, required this.canEdit});
+  final String? sport;
+  final Map<String, int>? currentStats;
+
+  const _HistoryTab({
+    required this.player,
+    required this.fs,
+    required this.canEdit,
+    required this.sport,
+    required this.currentStats,
+  });
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<StatsHistoryModel>>(
       stream: fs.streamStatsHistory(player.uid),
       builder: (context, snap) {
-        final entries = snap.data ?? [];
+        final allEntries = snap.data ?? [];
+        final entries = sport != null
+            ? allEntries.where((e) => e.sport == sport).toList()
+            : allEntries;
         return Scaffold(
           backgroundColor: AppTheme.backgroundGrey,
-          floatingActionButton: canEdit
+          floatingActionButton: canEdit && sport != null
               ? FloatingActionButton.extended(
                   onPressed: () => _showAddHistorySheet(context),
                   icon: const Icon(Icons.add),
@@ -435,14 +577,16 @@ class _HistoryTab extends StatelessWidget {
                           : 'No stats history yet.',
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 16, 16, 100),
                       itemCount: entries.length,
                       itemBuilder: (ctx, i) {
                         final e = entries[i];
                         return _HistoryCard(
                           entry: e,
                           canDelete: canEdit,
-                          onDelete: () => fs.deleteStatsHistory(player.uid, e.id),
+                          onDelete: () =>
+                              fs.deleteStatsHistory(player.uid, e.id),
                         );
                       },
                     ),
@@ -457,8 +601,15 @@ class _HistoryTab extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => _AddHistorySheet(player: player, fs: fs),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => _AddHistorySheet(
+        player: player,
+        fs: fs,
+        sport: sport!,
+        initialStats: currentStats ??
+            SportProfileModel.defaultStats(sport!),
+      ),
     );
   }
 }
@@ -476,6 +627,9 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = entry.stats;
+    final overall = s.isEmpty
+        ? 0.0
+        : s.values.reduce((a, b) => a + b) / s.length;
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
@@ -486,10 +640,22 @@ class _HistoryCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  DateFormat('d MMM yyyy').format(entry.recordedAt),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 13),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('d MMM yyyy').format(entry.recordedAt),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w600, fontSize: 13),
+                    ),
+                    if (entry.sport.isNotEmpty)
+                      Text(
+                        entry.sport[0].toUpperCase() +
+                            entry.sport.substring(1),
+                        style: const TextStyle(
+                            fontSize: 11, color: AppTheme.textGrey),
+                      ),
+                  ],
                 ),
                 Row(
                   children: [
@@ -497,11 +663,12 @@ class _HistoryCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                        color: AppTheme.primaryGreen
+                            .withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        'OVR ${s.overall.toStringAsFixed(0)}',
+                        'OVR ${overall.toStringAsFixed(0)}',
                         style: const TextStyle(
                             color: AppTheme.primaryGreen,
                             fontWeight: FontWeight.bold,
@@ -525,14 +692,14 @@ class _HistoryCard extends StatelessWidget {
             Wrap(
               spacing: 6,
               runSpacing: 4,
-              children: [
-                _MiniStat(label: 'PAC', value: s.pace),
-                _MiniStat(label: 'SHO', value: s.shooting),
-                _MiniStat(label: 'PAS', value: s.passing),
-                _MiniStat(label: 'DRI', value: s.dribbling),
-                _MiniStat(label: 'DEF', value: s.defending),
-                _MiniStat(label: 'PHY', value: s.physical),
-              ],
+              children: s.entries
+                  .map((e) => _MiniStat(
+                        label: e.key
+                            .substring(0, 3)
+                            .toUpperCase(),
+                        value: e.value,
+                      ))
+                  .toList(),
             ),
             if (entry.note != null && entry.note!.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -570,26 +737,34 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
-// ── Add History Sheet ───────────────────────────────────
+// ── Add History Sheet ─────────────────────────────────────────────────────────
 
 class _AddHistorySheet extends StatefulWidget {
   final PlayerModel player;
   final FirestoreService fs;
-  const _AddHistorySheet({required this.player, required this.fs});
+  final String sport;
+  final Map<String, int> initialStats;
+
+  const _AddHistorySheet({
+    required this.player,
+    required this.fs,
+    required this.sport,
+    required this.initialStats,
+  });
 
   @override
   State<_AddHistorySheet> createState() => _AddHistorySheetState();
 }
 
 class _AddHistorySheetState extends State<_AddHistorySheet> {
-  late PlayerStats _stats;
+  late Map<String, int> _stats;
   final _noteCtrl = TextEditingController();
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    _stats = widget.player.stats;
+    _stats = Map.from(widget.initialStats);
   }
 
   @override
@@ -600,6 +775,7 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
 
   @override
   Widget build(BuildContext context) {
+    final statKeys = AppConstants.sportStats[widget.sport] ?? [];
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
@@ -617,30 +793,37 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text('Add Stats Entry',
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textDark)),
+          Row(
+            children: [
+              const Text('Add Stats Entry',
+                  style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textDark)),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  widget.sport[0].toUpperCase() +
+                      widget.sport.substring(1),
+                  style: const TextStyle(
+                      fontSize: 12, color: AppTheme.primaryGreen),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
-          _SliderRow(
-              label: 'Pace', value: _stats.pace,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(pace: v))),
-          _SliderRow(
-              label: 'Shooting', value: _stats.shooting,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(shooting: v))),
-          _SliderRow(
-              label: 'Passing', value: _stats.passing,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(passing: v))),
-          _SliderRow(
-              label: 'Dribbling', value: _stats.dribbling,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(dribbling: v))),
-          _SliderRow(
-              label: 'Defending', value: _stats.defending,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(defending: v))),
-          _SliderRow(
-              label: 'Physical', value: _stats.physical,
-              onChanged: (v) => setState(() => _stats = _stats.copyWith(physical: v))),
+          ...statKeys.map((k) => _SliderRow(
+                label: k[0].toUpperCase() + k.substring(1),
+                value: _stats[k] ?? 50,
+                onChanged: (v) =>
+                    setState(() => _stats[k] = v),
+              )),
           const SizedBox(height: 8),
           TextField(
             controller: _noteCtrl,
@@ -670,13 +853,15 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
     final entry = StatsHistoryModel(
       id: '',
       playerId: widget.player.uid,
-      stats: _stats,
+      sport: widget.sport,
+      stats: Map.from(_stats),
       note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
       recordedAt: DateTime.now(),
     );
     await widget.fs.addStatsHistory(widget.player.uid, entry.toMap());
-    // Also update the player's current stats
-    await widget.fs.updatePlayerDoc(widget.player.uid, {'stats': _stats.toMap()});
+    // Also update the sport profile's current stats
+    await widget.fs
+        .updateSportProfile(widget.player.uid, widget.sport, {'stats': _stats});
     if (mounted) Navigator.pop(context);
   }
 }
@@ -695,9 +880,10 @@ class _SliderRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 80,
+            width: 90,
             child: Text(label,
-                style: const TextStyle(fontSize: 13, color: AppTheme.textDark)),
+                style: const TextStyle(
+                    fontSize: 13, color: AppTheme.textDark)),
           ),
           Expanded(
             child: Slider(
@@ -723,7 +909,7 @@ class _SliderRow extends StatelessWidget {
   }
 }
 
-// ── Badges Tab ──────────────────────────────────────────
+// ── Badges Tab ────────────────────────────────────────────────────────────────
 
 class _BadgesTab extends StatelessWidget {
   final PlayerModel player;
@@ -759,7 +945,8 @@ class _BadgesTab extends StatelessWidget {
                           : 'No badges earned yet.',
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      padding:
+                          const EdgeInsets.fromLTRB(16, 16, 16, 100),
                       gridDelegate:
                           const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
@@ -773,7 +960,8 @@ class _BadgesTab extends StatelessWidget {
                         return _BadgeCard(
                           badge: b,
                           canDelete: canEdit,
-                          onDelete: () => fs.deleteBadge(player.uid, b.id),
+                          onDelete: () =>
+                              fs.deleteBadge(player.uid, b.id),
                         );
                       },
                     ),
@@ -788,7 +976,8 @@ class _BadgesTab extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          borderRadius:
+              BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => _AwardBadgeSheet(player: player, fs: fs),
     );
   }
@@ -800,7 +989,9 @@ class _BadgeCard extends StatelessWidget {
   final VoidCallback onDelete;
 
   const _BadgeCard(
-      {required this.badge, required this.canDelete, required this.onDelete});
+      {required this.badge,
+      required this.canDelete,
+      required this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -841,8 +1032,10 @@ class _BadgeCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(2),
                   decoration: const BoxDecoration(
-                      color: AppTheme.errorRed, shape: BoxShape.circle),
-                  child: const Icon(Icons.close, size: 10, color: Colors.white),
+                      color: AppTheme.errorRed,
+                      shape: BoxShape.circle),
+                  child: const Icon(Icons.close,
+                      size: 10, color: Colors.white),
                 ),
               ),
             ),
@@ -852,7 +1045,7 @@ class _BadgeCard extends StatelessWidget {
   }
 }
 
-// ── Award Badge Sheet ───────────────────────────────────
+// ── Award Badge Sheet ─────────────────────────────────────────────────────────
 
 class _AwardBadgeSheet extends StatefulWidget {
   final PlayerModel player;
@@ -953,7 +1146,8 @@ class _AwardBadgeSheetState extends State<_AwardBadgeSheet> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: (_saving || _selected == null) ? null : () => _award(auth),
+            onPressed:
+                (_saving || _selected == null) ? null : () => _award(auth),
             style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.accentAmber),
             child: _saving
@@ -988,7 +1182,7 @@ class _AwardBadgeSheetState extends State<_AwardBadgeSheet> {
   }
 }
 
-// ── Info Tab ────────────────────────────────────────────
+// ── Info Tab ──────────────────────────────────────────────────────────────────
 
 class _InfoTab extends StatelessWidget {
   final PlayerModel player;
@@ -1000,7 +1194,6 @@ class _InfoTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Parent contact
           _InfoSection(
             title: 'Parent / Guardian',
             icon: Icons.family_restroom,
@@ -1020,8 +1213,6 @@ class _InfoTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-
-          // Health info
           _InfoSection(
             title: 'Health Info',
             icon: Icons.health_and_safety_outlined,
@@ -1029,16 +1220,16 @@ class _InfoTab extends StatelessWidget {
               _InfoRow(label: 'Height', value: player.health.height),
               _InfoRow(label: 'Weight', value: player.health.weight),
               _InfoRow(
-                  label: 'Blood Group', value: player.health.bloodGroup),
+                  label: 'Blood Group',
+                  value: player.health.bloodGroup),
               _InfoRow(
                   label: 'Allergies', value: player.health.allergies),
               _InfoRow(
-                  label: 'Medications', value: player.health.medications),
+                  label: 'Medications',
+                  value: player.health.medications),
             ],
           ),
           const SizedBox(height: 12),
-
-          // Bio
           if (player.bio != null && player.bio!.isNotEmpty)
             _InfoSection(
               title: 'Coaching Notes',
@@ -1052,8 +1243,6 @@ class _InfoTab extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 12),
-
-          // Contact
           _InfoSection(
             title: 'Contact',
             icon: Icons.contact_page_outlined,
@@ -1124,16 +1313,18 @@ class _InfoRow extends StatelessWidget {
             width: 110,
             child: Text(label,
                 style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textGrey)),
+                    fontSize: 12, color: AppTheme.textGrey)),
           ),
           Expanded(
             child: Text(display,
                 style: TextStyle(
                     fontSize: 13,
-                    color: isNull ? AppTheme.textGrey : AppTheme.textDark,
-                    fontStyle:
-                        isNull ? FontStyle.italic : FontStyle.normal)),
+                    color: isNull
+                        ? AppTheme.textGrey
+                        : AppTheme.textDark,
+                    fontStyle: isNull
+                        ? FontStyle.italic
+                        : FontStyle.normal)),
           ),
         ],
       ),
@@ -1141,7 +1332,7 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ── Shared helpers ──────────────────────────────────────
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
   final IconData icon;

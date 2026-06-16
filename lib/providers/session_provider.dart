@@ -38,13 +38,21 @@ class SessionProvider extends ChangeNotifier {
     );
   }
 
+  List<SessionModel> getByTeam(String teamId) =>
+      _sessions.where((s) => s.teamId == teamId).toList();
+
+  List<SessionModel> getBySport(String sport) =>
+      _sessions.where((s) => s.sport == sport).toList();
+
   Future<bool> createSession({
     required String title,
     required String type,
     required DateTime dateTime,
     required String location,
     required String notes,
+    String? sport,
     String? category,
+    String? teamId,
     required String organizationId,
     required String branchId,
     required String coachUid,
@@ -61,7 +69,9 @@ class SessionProvider extends ChangeNotifier {
         dateTime: dateTime,
         location: location,
         notes: notes,
+        sport: sport,
         category: category,
+        teamId: teamId,
         organizationId: organizationId,
         branchId: branchId,
         createdBy: coachUid,

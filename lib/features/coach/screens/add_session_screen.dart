@@ -21,6 +21,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
   final _notesCtrl = TextEditingController();
 
   String _type = AppConstants.sessionTypeTraining;
+  String? _sport;
   String? _category;
   DateTime _dateTime = DateTime.now().add(const Duration(hours: 2));
 
@@ -78,6 +79,11 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_sport == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a sport')));
+      return;
+    }
     final user = context.read<AuthProvider>().userModel!;
     final success = await context.read<SessionProvider>().createSession(
           title: _titleCtrl.text.trim(),
@@ -86,6 +92,7 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
           location: _locationCtrl.text.trim(),
           notes: _notesCtrl.text.trim(),
           category: _category,
+          sport: _sport,
           organizationId: user.organizationId,
           branchId: user.branchId ?? '',
           coachUid: user.uid,
@@ -146,6 +153,38 @@ class _AddSessionScreenState extends State<AddSessionScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // Sport selector
+              const Text('Sport',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: AppConstants.sports.map((s) {
+                    final selected = _sport == s;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label:
+                            Text(s[0].toUpperCase() + s.substring(1)),
+                        selected: selected,
+                        onSelected: (_) =>
+                            setState(() => _sport = s),
+                        selectedColor: AppTheme.primaryGreen,
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? AppTheme.onPrimary
+                              : AppTheme.textGrey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
               const SizedBox(height: 20),
 

@@ -60,6 +60,29 @@ class SessionCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (session.sport != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                            color: AppTheme.primaryGreen
+                                .withValues(alpha: 0.25)),
+                      ),
+                      child: Text(
+                        session.sport![0].toUpperCase() +
+                            session.sport!.substring(1),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                   if (session.category != null) ...[
                     const SizedBox(width: 8),
                     Container(

@@ -13,6 +13,9 @@ import '../models/attendance_model.dart';
 import '../models/payment_model.dart';
 import '../models/video_analysis_model.dart';
 import '../models/qr_session_model.dart';
+import '../models/sport_profile_model.dart';
+import '../models/team_model.dart';
+import '../models/team_member_model.dart';
 import '../core/constants/app_constants.dart';
 
 class FirestoreService {
@@ -202,9 +205,154 @@ class FirestoreService {
           s.docs.map((d) => DrillModel.fromMap(d.data(), d.id)).toList());
 
   Future<void> deletePlayer(String uid) async {
-    await _db.collection(AppConstants.playersCollection).doc(uid).delete();
-    await _db.collection(AppConstants.usersCollection).doc(uid).delete();
+    // Delete sport profiles subcollection first
+    final profiles = await _db
+        .collection(AppConstants.playersCollection)
+        .doc(uid)
+        .collection(AppConstants.sportProfilesCollection)
+        .get();
+    final batch = _db.batch();
+    for (final doc in profiles.docs) {
+      batch.delete(doc.reference);
+    }
+    batch.delete(_db.collection(AppConstants.playersCollection).doc(uid));
+    batch.delete(_db.collection(AppConstants.usersCollection).doc(uid));
+    await batch.commit();
   }
+
+  // ── Sport Profiles (subcollection of players) ──────────
+
+  Future<void> createSportProfile(
+          String playerId, String sport, Map<String, dynamic> data) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .doc(playerId)
+          .collection(AppConstants.sportProfilesCollection)
+          .doc(sport)
+          .set(data);
+
+  Future<void> updateSportProfile(
+          String playerId, String sport, Map<String, dynamic> data) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .doc(playerId)
+          .collection(AppConstants.sportProfilesCollection)
+          .doc(sport)
+          .update(data);
+
+  Future<void> deleteSportProfile(String playerId, String sport) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .doc(playerId)
+          .collection(AppConstants.sportProfilesCollection)
+          .doc(sport)
+          .delete();
+
+  Stream<List<SportProfileModel>> streamSportProfiles(String playerId) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .doc(playerId)
+          .collection(AppConstants.sportProfilesCollection)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => SportProfileModel.fromMap(d.data()))
+              .toList());
+
+  Future<SportProfileModel?> getSportProfile(
+      String playerId, String sport) async {
+    final doc = await _db
+        .collection(AppConstants.playersCollection)
+        .doc(playerId)
+        .collection(AppConstants.sportProfilesCollection)
+        .doc(sport)
+        .get();
+    if (!doc.exists) return null;
+    return SportProfileModel.fromMap(doc.data()!);
+  }
+
+  Stream<List<SportProfileModel>> streamSportProfilesByBranch(
+          String branchId, String sport) =>
+      _db
+          .collectionGroup(AppConstants.sportProfilesCollection)
+          .where('branchId', isEqualTo: branchId)
+          .where('sport', isEqualTo: sport)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => SportProfileModel.fromMap(d.data()))
+              .toList());
+
+  Stream<List<SportProfileModel>> streamAllSportProfilesByBranch(
+          String branchId) =>
+      _db
+          .collectionGroup(AppConstants.sportProfilesCollection)
+          .where('branchId', isEqualTo: branchId)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => SportProfileModel.fromMap(d.data()))
+              .toList());
+
+  // ── Teams ──────────────────────────────────────────────
+
+  Future<String> createTeam(Map<String, dynamic> data) async {
+    final doc = await _db.collection(AppConstants.teamsCollection).add(data);
+    return doc.id;
+  }
+
+  Future<void> updateTeam(String id, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.teamsCollection).doc(id).update(data);
+
+  Future<void> deleteTeam(String id) =>
+      _db.collection(AppConstants.teamsCollection).doc(id).delete();
+
+  Stream<List<TeamModel>> streamTeamsByBranch(String branchId) =>
+      _db
+          .collection(AppConstants.teamsCollection)
+          .where('branchId', isEqualTo: branchId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((s) =>
+              s.docs.map((d) => TeamModel.fromMap(d.data(), d.id)).toList());
+
+  Stream<List<TeamModel>> streamTeamsBySport(
+          String branchId, String sport) =>
+      _db
+          .collection(AppConstants.teamsCollection)
+          .where('branchId', isEqualTo: branchId)
+          .where('sport', isEqualTo: sport)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((s) =>
+              s.docs.map((d) => TeamModel.fromMap(d.data(), d.id)).toList());
+
+  // ── Team Members (subcollection of teams) ──────────────
+
+  Future<void> addTeamMember(
+          String teamId, String playerId, Map<String, dynamic> data) =>
+      _db
+          .collection(AppConstants.teamsCollection)
+          .doc(teamId)
+          .collection(AppConstants.teamMembersCollection)
+          .doc(playerId)
+          .set(data);
+
+  Future<void> removeTeamMember(String teamId, String playerId) =>
+      _db
+          .collection(AppConstants.teamsCollection)
+          .doc(teamId)
+          .collection(AppConstants.teamMembersCollection)
+          .doc(playerId)
+          .delete();
+
+  Stream<List<TeamMemberModel>> streamTeamMembers(String teamId) =>
+      _db
+          .collection(AppConstants.teamsCollection)
+          .doc(teamId)
+          .collection(AppConstants.teamMembersCollection)
+          .orderBy('addedAt')
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => TeamMemberModel.fromMap(d.data()))
+              .toList());
 
   Stream<PlayerModel?> streamPlayerById(String uid) =>
       _db

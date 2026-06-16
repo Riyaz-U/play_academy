@@ -7,6 +7,7 @@ import '../../../providers/drill_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/video_provider.dart';
 import '../../../providers/session_provider.dart';
+import '../../../providers/team_provider.dart';
 
 class CoachShell extends StatefulWidget {
   final Widget child;
@@ -29,6 +30,7 @@ class _CoachShellState extends State<CoachShell> {
       context.read<SessionProvider>().listenToUpcoming(branchId);
       context.read<DrillProvider>().listenByBranch(branchId);
       context.read<VideoProvider>().listenByBranch(branchId);
+      context.read<TeamProvider>().listenByBranch(branchId);
       context.read<DashboardProvider>().load(branchId);
     });
   }
@@ -37,8 +39,9 @@ class _CoachShellState extends State<CoachShell> {
     final loc = GoRouterState.of(context).matchedLocation;
     if (loc.startsWith('/coach/sessions')) return 1;
     if (loc.startsWith('/coach/players')) return 2;
-    if (loc.startsWith('/coach/drills')) return 3;
-    if (loc.startsWith('/coach/video')) return 4;
+    if (loc.startsWith('/coach/teams')) return 3;
+    if (loc.startsWith('/coach/drills')) return 4;
+    if (loc.startsWith('/coach/video')) return 5;
     return 0;
   }
 
@@ -57,8 +60,10 @@ class _CoachShellState extends State<CoachShell> {
             case 2:
               context.go('/coach/players');
             case 3:
-              context.go('/coach/drills');
+              context.go('/coach/teams');
             case 4:
+              context.go('/coach/drills');
+            case 5:
               context.go('/coach/video');
           }
         },
@@ -77,6 +82,11 @@ class _CoachShellState extends State<CoachShell> {
             icon: Icon(Icons.people_outlined),
             selectedIcon: Icon(Icons.people),
             label: 'Players',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Teams',
           ),
           NavigationDestination(
             icon: Icon(Icons.sports_gymnastics_outlined),

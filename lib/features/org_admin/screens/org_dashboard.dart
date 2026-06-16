@@ -27,12 +27,14 @@ class OrgDashboard extends StatelessWidget {
         b.id: players.where((p) => p.branchId == b.id).length,
     };
 
-    // Players by category
-    final categoryMap = <String, int>{};
-    for (final p in players) {
-      categoryMap[p.category] = (categoryMap[p.category] ?? 0) + 1;
-    }
-    final categories = categoryMap.entries.toList()
+    // Players per branch (sorted for pie chart)
+    final branchEntries = playersPerBranch.entries
+        .map((e) {
+          final branch = branches.where((b) => b.id == e.key).firstOrNull;
+          return MapEntry(branch?.name ?? e.key, e.value);
+        })
+        .where((e) => e.value > 0)
+        .toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
@@ -122,9 +124,9 @@ class OrgDashboard extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MetricCard(
-                            label: 'Categories',
-                            value: '${categoryMap.length}',
-                            icon: Icons.category,
+                            label: 'Branches',
+                            value: '${branches.length}',
+                            icon: Icons.location_on_outlined,
                             color: AppTheme.accentAmber,
                           ),
                         ),
@@ -146,11 +148,11 @@ class OrgDashboard extends StatelessWidget {
                 const SizedBox(height: 24),
               ],
 
-              // Players by category pie chart
-              if (categories.isNotEmpty) ...[
-                _SectionHeader(title: 'Players by Category'),
+              // Players by branch pie chart
+              if (branchEntries.isNotEmpty) ...[
+                _SectionHeader(title: 'Players by Branch'),
                 const SizedBox(height: 12),
-                _CategoryPieChart(categories: categories),
+                _CategoryPieChart(categories: branchEntries),
                 const SizedBox(height: 24),
               ],
 

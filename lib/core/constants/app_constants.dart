@@ -14,6 +14,9 @@ class AppConstants {
   static const String videoAnalysisCollection = 'videoAnalysis';
   static const String annotationsCollection = 'annotations';
   static const String qrSessionsCollection = 'qrSessions';
+  static const String teamsCollection = 'teams';
+  static const String sportProfilesCollection = 'sportProfiles';
+  static const String teamMembersCollection = 'members';
 
   // ── Roles ─────────────────────────────────────────────
   static const String roleOrgAdmin = 'org_admin';
@@ -38,13 +41,35 @@ class AppConstants {
   static const String fcmChannelId = 'play_academy_channel';
   static const String topicAllPlayers = 'all_players';
 
-  // ── Player positions ──────────────────────────────────
-  static const List<String> positions = [
-    'Goalkeeper',
-    'Defender',
-    'Midfielder',
-    'Forward',
+  // ── Sports ────────────────────────────────────────────
+  static const List<String> sports = [
+    'football',
+    'basketball',
+    'cricket',
+    'tennis',
+    'volleyball',
+    'badminton',
   ];
+
+  // ── Sport-specific positions ──────────────────────────
+  static const Map<String, List<String>> sportPositions = {
+    'football':   ['Goalkeeper', 'Defender', 'Midfielder', 'Forward'],
+    'basketball': ['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center'],
+    'cricket':    ['Batsman', 'Bowler', 'All-rounder', 'Wicket-keeper'],
+    'tennis':     ['Singles', 'Doubles'],
+    'volleyball': ['Setter', 'Libero', 'Outside Hitter', 'Middle Blocker', 'Opposite', 'Serving Specialist'],
+    'badminton':  ['Singles', 'Doubles', 'Mixed Doubles'],
+  };
+
+  // ── Sport-specific stat keys ──────────────────────────
+  static const Map<String, List<String>> sportStats = {
+    'football':   ['pace', 'shooting', 'passing', 'dribbling', 'defending', 'physical'],
+    'basketball': ['speed', 'shooting', 'passing', 'dribbling', 'defense', 'rebounding'],
+    'cricket':    ['batting', 'bowling', 'fielding', 'fitness'],
+    'tennis':     ['serve', 'forehand', 'backhand', 'footwork', 'mental'],
+    'volleyball': ['serving', 'spiking', 'blocking', 'setting', 'digging', 'fitness'],
+    'badminton':  ['smash', 'defense', 'footwork', 'stamina', 'mental'],
+  };
 
   // ── Player age categories ─────────────────────────────
   static const List<String> categories = [

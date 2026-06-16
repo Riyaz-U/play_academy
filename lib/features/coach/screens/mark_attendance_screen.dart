@@ -130,12 +130,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     final allPlayers = context.watch<PlayerProvider>().players;
     final attendanceProvider = context.watch<AttendanceProvider>();
 
-    // Filter players by session category
-    final players = session?.category != null
-        ? allPlayers
-            .where((p) => p.category == session!.category)
-            .toList()
-        : allPlayers;
+    final players = allPlayers;
 
     _initAttendance(attendanceProvider, players);
 
@@ -260,10 +255,13 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                     radius: 18,
                                     backgroundColor: AppTheme.primaryGreen
                                         .withValues(alpha: 0.1),
-                                    child: Text('#${p.jerseyNumber}',
+                                    child: Text(
+                                        p.name.isNotEmpty
+                                            ? p.name[0].toUpperCase()
+                                            : '?',
                                         style: const TextStyle(
                                             color: AppTheme.primaryGreen,
-                                            fontSize: 11,
+                                            fontSize: 13,
                                             fontWeight: FontWeight.bold)),
                                   ),
                                   const SizedBox(width: 10),
@@ -276,7 +274,7 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
                                             style: const TextStyle(
                                                 fontWeight: FontWeight.w600)),
                                         Text(
-                                            '${p.position} • ${p.category}',
+                                            'Age ${p.age}',
                                             style: const TextStyle(
                                                 color: AppTheme.textGrey,
                                                 fontSize: 11)),

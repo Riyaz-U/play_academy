@@ -5,8 +5,9 @@ class BadgeModel {
   final String playerId;
   final String name;
   final String emoji;
+  final String? sport;
   final String? note;
-  final String awardedBy; // uid of coach/admin
+  final String awardedBy;
   final String awardedByName;
   final DateTime awardedAt;
 
@@ -15,6 +16,7 @@ class BadgeModel {
     required this.playerId,
     required this.name,
     required this.emoji,
+    this.sport,
     this.note,
     required this.awardedBy,
     required this.awardedByName,
@@ -23,17 +25,18 @@ class BadgeModel {
 
   factory BadgeModel.fromMap(Map<String, dynamic> map, String id) {
     final name = map['name'] as String? ?? '';
-    // Fall back to looking up emoji from BadgeType if not stored
     final storedEmoji = map['emoji'] as String?;
     final fallbackEmoji = BadgeType.all
-        .where((bt) => bt.name == name)
-        .map((bt) => bt.emoji)
-        .firstOrNull ?? '🏅';
+            .where((bt) => bt.name == name)
+            .map((bt) => bt.emoji)
+            .firstOrNull ??
+        '🏅';
     return BadgeModel(
       id: id,
       playerId: map['playerId'] as String? ?? '',
       name: name,
       emoji: storedEmoji ?? fallbackEmoji,
+      sport: map['sport'] as String?,
       note: map['note'] as String?,
       awardedBy: map['awardedBy'] as String? ?? '',
       awardedByName: map['awardedByName'] as String? ?? '',
@@ -47,6 +50,7 @@ class BadgeModel {
         'playerId': playerId,
         'name': name,
         'emoji': emoji,
+        if (sport != null) 'sport': sport,
         if (note != null && note!.isNotEmpty) 'note': note,
         'awardedBy': awardedBy,
         'awardedByName': awardedByName,
@@ -54,7 +58,6 @@ class BadgeModel {
       };
 }
 
-/// All available badge types in the system
 class BadgeType {
   final String name;
   final String emoji;
@@ -62,16 +65,16 @@ class BadgeType {
   const BadgeType({required this.name, required this.emoji});
 
   static const List<BadgeType> all = [
-    BadgeType(name: 'Top Scorer', emoji: '⚽'),
     BadgeType(name: 'Most Improved', emoji: '📈'),
-    BadgeType(name: 'Defensive Wall', emoji: '🛡️'),
     BadgeType(name: 'Speed Demon', emoji: '⚡'),
     BadgeType(name: 'Playmaker', emoji: '🎯'),
     BadgeType(name: 'Hard Worker', emoji: '💪'),
     BadgeType(name: 'Team Player', emoji: '🤝'),
     BadgeType(name: 'Rising Star', emoji: '🌟'),
-    BadgeType(name: 'Clean Sheet', emoji: '🧤'),
-    BadgeType(name: 'Assist King', emoji: '👑'),
     BadgeType(name: 'Iron Man', emoji: '🏃'),
+    BadgeType(name: 'Best Attendance', emoji: '📅'),
+    BadgeType(name: 'Top Performer', emoji: '🏆'),
+    BadgeType(name: 'Leadership', emoji: '🦁'),
+    BadgeType(name: 'Comeback Kid', emoji: '🔥'),
   ];
 }

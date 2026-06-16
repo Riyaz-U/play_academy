@@ -4,18 +4,20 @@ import '../core/constants/app_constants.dart';
 class SessionModel {
   final String id;
   final String title;
-  final String type; // 'training' | 'match'
+  final String type;
   final DateTime dateTime;
   final String location;
   final String notes;
-  final String? category; // null = all categories, or specific age group
+  final String? sport;
+  final String? category;
+  final String? teamId;
   final String organizationId;
   final String branchId;
-  final String createdBy; // coach uid
-  final String createdByName; // coach name for display
+  final String createdBy;
+  final String createdByName;
   final DateTime createdAt;
   final bool isCompleted;
-  final String? highlights; // text or video URL added after completion
+  final String? highlights;
 
   const SessionModel({
     required this.id,
@@ -24,7 +26,9 @@ class SessionModel {
     required this.dateTime,
     required this.location,
     required this.notes,
+    this.sport,
     this.category,
+    this.teamId,
     required this.organizationId,
     required this.branchId,
     required this.createdBy,
@@ -37,6 +41,7 @@ class SessionModel {
   bool get isTraining => type == AppConstants.sessionTypeTraining;
   bool get isMatch => type == AppConstants.sessionTypeMatch;
   bool get isUpcoming => dateTime.isAfter(DateTime.now());
+  bool get isTeamSession => teamId != null;
 
   factory SessionModel.fromMap(Map<String, dynamic> map, String id) {
     return SessionModel(
@@ -48,7 +53,9 @@ class SessionModel {
           : DateTime.now(),
       location: map['location'] as String? ?? '',
       notes: map['notes'] as String? ?? '',
+      sport: map['sport'] as String?,
       category: map['category'] as String?,
+      teamId: map['teamId'] as String?,
       organizationId: map['organizationId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
       createdBy: map['createdBy'] as String? ?? '',
@@ -68,7 +75,9 @@ class SessionModel {
       'dateTime': Timestamp.fromDate(dateTime),
       'location': location,
       'notes': notes,
+      if (sport != null) 'sport': sport,
       if (category != null) 'category': category,
+      if (teamId != null) 'teamId': teamId,
       'organizationId': organizationId,
       'branchId': branchId,
       'createdBy': createdBy,

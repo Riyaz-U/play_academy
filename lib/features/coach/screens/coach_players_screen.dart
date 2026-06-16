@@ -13,20 +13,18 @@ class CoachPlayersScreen extends StatefulWidget {
 }
 
 class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
-  String? _selectedCategory;
+  String? _selectedSport;
 
   @override
   Widget build(BuildContext context) {
     final allPlayers = context.watch<PlayerProvider>().players;
-    final filtered = _selectedCategory == null
-        ? allPlayers
-        : allPlayers.where((p) => p.category == _selectedCategory).toList();
+    final filtered = allPlayers;
 
     return Scaffold(
       appBar: AppBar(title: Text('Players (${filtered.length})')),
       body: Column(
         children: [
-          // Category filter
+          // Sport filter
           Container(
             color: AppTheme.cardDark,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -36,14 +34,14 @@ class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
                 children: [
                   _Chip(
                     label: 'All',
-                    selected: _selectedCategory == null,
-                    onTap: () => setState(() => _selectedCategory = null),
+                    selected: _selectedSport == null,
+                    onTap: () => setState(() => _selectedSport = null),
                   ),
-                  ...AppConstants.categories.map((c) => _Chip(
-                        label: c,
-                        selected: _selectedCategory == c,
+                  ...AppConstants.sports.map((s) => _Chip(
+                        label: s[0].toUpperCase() + s.substring(1),
+                        selected: _selectedSport == s,
                         onTap: () =>
-                            setState(() => _selectedCategory = c),
+                            setState(() => _selectedSport = s),
                       )),
                 ],
               ),
@@ -76,33 +74,22 @@ class _CoachPlayersScreenState extends State<CoachPlayersScreen> {
                           leading: CircleAvatar(
                             backgroundColor:
                                 AppTheme.primaryGreen.withValues(alpha: 0.1),
-                            child: Text('#${p.jerseyNumber}',
+                            child: Text(
+                                p.name.isNotEmpty
+                                    ? p.name[0].toUpperCase()
+                                    : '?',
                                 style: const TextStyle(
                                     color: AppTheme.primaryGreen,
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 13)),
+                                    fontSize: 16)),
                           ),
                           title: Text(p.name,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                            '${p.position} • Age ${p.age}',
+                            'Age ${p.age}',
                             style: const TextStyle(
                                 fontSize: 12, color: AppTheme.textGrey),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen
-                                  .withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(p.category,
-                                style: const TextStyle(
-                                    color: AppTheme.primaryGreen,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600)),
                           ),
                         ),
                       );

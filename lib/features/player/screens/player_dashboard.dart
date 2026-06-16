@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -8,19 +9,58 @@ import '../../../providers/session_provider.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/payment_provider.dart';
 import '../../../models/attendance_model.dart';
+import '../../../models/sport_profile_model.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../services/firestore_service.dart';
 import '../../../widgets/session_card.dart';
 
-class PlayerDashboard extends StatelessWidget {
+class PlayerDashboard extends StatefulWidget {
   const PlayerDashboard({super.key});
 
   @override
+  State<PlayerDashboard> createState() => _PlayerDashboardState();
+}
+
+class _PlayerDashboardState extends State<PlayerDashboard> {
+  List<SportProfileModel> _profiles = [];
+  String? _selectedSport;
+  StreamSubscription<List<SportProfileModel>>? _profileSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uid = context.read<AuthProvider>().userModel?.uid;
+      if (uid != null) {
+        _profileSub = FirestoreService()
+            .streamSportProfiles(uid)
+            .listen((profiles) => setState(() {
+                  _profiles = profiles;
+                  _selectedSport ??=
+                      profiles.isNotEmpty ? profiles.first.sport : null;
+                }));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _profileSub?.cancel();
+    super.dispose();
+  }
+
+  SportProfileModel? get _selectedProfile => _profiles
+      .where((p) => p.sport == _selectedSport)
+      .firstOrNull;
+
+  @override
   Widget build(BuildContext context) {
-    final user        = context.watch<AuthProvider>().userModel;
-    final playerData  = context.watch<PlayerProvider>().self;
-    final sessions    = context.watch<SessionProvider>();
-    final attendance  = context.watch<AttendanceProvider>();
-    final payments    = context.watch<PaymentProvider>();
+    final user = context.watch<AuthProvider>().userModel;
+    context.watch<PlayerProvider>().self;
+    final sessions = context.watch<SessionProvider>();
+    final attendance = context.watch<AttendanceProvider>();
+    final payments = context.watch<PaymentProvider>();
 
     final now = DateTime.now();
     final nextSession = sessions.upcomingSessions.isNotEmpty
@@ -28,27 +68,35 @@ class PlayerDashboard extends StatelessWidget {
         : null;
 
     final recentHighlights = sessions.sessions
-        .where((s) => s.isCompleted && s.highlights != null && s.highlights!.isNotEmpty)
+        .where((s) =>
+            s.isCompleted &&
+            s.highlights != null &&
+            s.highlights!.isNotEmpty)
         .toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
-    final highlightSession = recentHighlights.isNotEmpty ? recentHighlights.first : null;
+    final highlightSession =
+        recentHighlights.isNotEmpty ? recentHighlights.first : null;
 
     final hasPendingPayment = payments.pendingPayments.isNotEmpty;
 
-    // Last 5 rated attendance records (most recent first)
     final recentPerf = attendance.playerAttendance
         .where((a) => a.rating != null && a.rating! > 0)
         .toList()
       ..sort((a, b) => b.markedAt.compareTo(a.markedAt));
     final recentPerfSlice = recentPerf.take(5).toList();
 
-    // Attendance breakdown
-    final total   = attendance.playerAttendance.length;
-    final present = attendance.playerAttendance.where((a) => a.status == 'present').length;
-    final late    = attendance.playerAttendance.where((a) => a.status == 'late').length;
-    final absent  = attendance.playerAttendance.where((a) => a.status == 'absent').length;
+    final total = attendance.playerAttendance.length;
+    final present =
+        attendance.playerAttendance.where((a) => a.status == 'present').length;
+    final late =
+        attendance.playerAttendance.where((a) => a.status == 'late').length;
+    final absent =
+        attendance.playerAttendance.where((a) => a.status == 'absent').length;
 
-    final stats = playerData?.stats;
+    final profile = _selectedProfile;
+    final statKeys = _selectedSport != null
+        ? (AppConstants.sportStats[_selectedSport] ?? [])
+        : <String>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -57,7 +105,8 @@ class PlayerDashboard extends StatelessWidget {
           PopupMenuButton<String>(
             icon: const CircleAvatar(
               backgroundColor: AppTheme.primaryGreen,
-              child: Icon(Icons.person, color: AppTheme.onPrimary, size: 20),
+              child:
+                  Icon(Icons.person, color: AppTheme.onPrimary, size: 20),
             ),
             onSelected: (v) {
               if (v == 'logout') context.read<AuthProvider>().signOut();
@@ -67,10 +116,12 @@ class PlayerDashboard extends StatelessWidget {
                 enabled: false,
                 child: Text(user?.name ?? '',
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textDark)),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(value: 'logout', child: Text('Sign Out')),
+              const PopupMenuItem(
+                  value: 'logout', child: Text('Sign Out')),
             ],
           ),
         ],
@@ -80,6 +131,36 @@ class PlayerDashboard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Sport tabs ────────────────────────────────────────────────
+            if (_profiles.length > 1) ...[
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _profiles.map((p) {
+                    final selected = p.sport == _selectedSport;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(
+                            p.sport[0].toUpperCase() + p.sport.substring(1)),
+                        selected: selected,
+                        onSelected: (_) =>
+                            setState(() => _selectedSport = p.sport),
+                        selectedColor: AppTheme.primaryGreen,
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? AppTheme.onPrimary
+                              : AppTheme.textGrey,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
             // ── Profile card ──────────────────────────────────────────────
             Container(
               width: double.infinity,
@@ -96,7 +177,7 @@ class PlayerDashboard extends StatelessWidget {
                       Container(
                         width: 52,
                         height: 52,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: AppTheme.onPrimary,
                           shape: BoxShape.circle,
                         ),
@@ -128,36 +209,39 @@ class PlayerDashboard extends StatelessWidget {
                             Text(
                               DateFormat('EEEE, d MMMM').format(now),
                               style: TextStyle(
-                                  color: AppTheme.onPrimary.withValues(alpha: 0.75),
+                                  color: AppTheme.onPrimary
+                                      .withValues(alpha: 0.75),
                                   fontSize: 12),
                             ),
                           ],
                         ),
                       ),
-                      // Jersey number badge
-                      if (playerData != null)
+                      if (profile != null)
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: AppTheme.onPrimary.withValues(alpha: 0.15),
+                            color:
+                                AppTheme.onPrimary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                                color: AppTheme.onPrimary.withValues(alpha: 0.3)),
+                                color: AppTheme.onPrimary
+                                    .withValues(alpha: 0.3)),
                           ),
                           child: Column(
                             children: [
                               Text(
-                                '#${playerData.jerseyNumber}',
+                                '#${profile.jerseyNumber}',
                                 style: const TextStyle(
                                     color: AppTheme.onPrimary,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold),
                               ),
                               Text(
-                                playerData.position,
+                                profile.position,
                                 style: TextStyle(
-                                    color: AppTheme.onPrimary.withValues(alpha: 0.8),
+                                    color: AppTheme.onPrimary
+                                        .withValues(alpha: 0.8),
                                     fontSize: 10),
                               ),
                             ],
@@ -183,11 +267,11 @@ class PlayerDashboard extends StatelessWidget {
                         suffix: 'avg rating',
                         icon: Icons.star_outline,
                       ),
-                      if (playerData != null)
+                      if (profile != null)
                         _StatPill(
-                          label: stats!.overall.toStringAsFixed(0),
+                          label: profile.overall.toStringAsFixed(0),
                           suffix: 'overall',
-                          icon: Icons.sports_soccer,
+                          icon: Icons.sports_score,
                         ),
                     ],
                   ),
@@ -208,7 +292,7 @@ class PlayerDashboard extends StatelessWidget {
               ),
 
             // ── Player Stats ──────────────────────────────────────────────
-            if (stats != null) ...[
+            if (profile != null && statKeys.isNotEmpty) ...[
               _SectionHeader(title: 'Player Stats'),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -218,33 +302,33 @@ class PlayerDashboard extends StatelessWidget {
                   border: Border.all(
                       color: AppTheme.borderDark.withValues(alpha: 0.5)),
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _OverallBadge(overall: stats.overall),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              _StatBar(label: 'Pace',       value: stats.pace),
-                              _StatBar(label: 'Shooting',   value: stats.shooting),
-                              _StatBar(label: 'Passing',    value: stats.passing),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              _StatBar(label: 'Dribbling',  value: stats.dribbling),
-                              _StatBar(label: 'Defending',  value: stats.defending),
-                              _StatBar(label: 'Physical',   value: stats.physical),
-                            ],
-                          ),
-                        ),
-                      ],
+                    _OverallBadge(overall: profile.overall),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        children: statKeys
+                            .take((statKeys.length / 2).ceil())
+                            .map((k) => _StatBar(
+                                  label: k[0].toUpperCase() + k.substring(1),
+                                  value: profile.stats[k] ?? 50,
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        children: statKeys
+                            .skip((statKeys.length / 2).ceil())
+                            .map((k) => _StatBar(
+                                  label: k[0].toUpperCase() + k.substring(1),
+                                  value: profile.stats[k] ?? 50,
+                                ))
+                            .toList(),
+                      ),
                     ),
                   ],
                 ),
@@ -354,7 +438,7 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Overall badge (circular) ──────────────────────────────────────────────────
+// ── Overall badge ─────────────────────────────────────────────────────────────
 class _OverallBadge extends StatelessWidget {
   final double overall;
   const _OverallBadge({required this.overall});
@@ -393,7 +477,7 @@ class _OverallBadge extends StatelessWidget {
   }
 }
 
-// ── Stat bar (label + progress + value) ──────────────────────────────────────
+// ── Stat bar ──────────────────────────────────────────────────────────────────
 class _StatBar extends StatelessWidget {
   final String label;
   final int value;
@@ -441,7 +525,7 @@ class _StatBar extends StatelessWidget {
   }
 }
 
-// ── Attendance summary box ────────────────────────────────────────────────────
+// ── Attendance box ────────────────────────────────────────────────────────────
 class _AttendanceBox extends StatelessWidget {
   final int count;
   final String label;
@@ -491,8 +575,8 @@ class _PerformanceRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: const BoxDecoration(
-        border: Border(
-            bottom: BorderSide(color: Color(0xFF2A2A2A))),
+        border:
+            Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
       ),
       child: Row(
         children: [
@@ -527,7 +611,9 @@ class _PerformanceRow extends StatelessWidget {
             children: List.generate(
               5,
               (i) => Icon(
-                i < (record.rating ?? 0) ? Icons.star : Icons.star_border,
+                i < (record.rating ?? 0)
+                    ? Icons.star
+                    : Icons.star_border,
                 size: 14,
                 color: AppTheme.accentAmber,
               ),
@@ -539,7 +625,7 @@ class _PerformanceRow extends StatelessWidget {
   }
 }
 
-// ── Stat pill (profile card) ──────────────────────────────────────────────────
+// ── Stat pill ─────────────────────────────────────────────────────────────────
 class _StatPill extends StatelessWidget {
   final String label;
   final String suffix;
@@ -562,7 +648,8 @@ class _StatPill extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$label $suffix',
-            style: const TextStyle(color: AppTheme.onPrimary, fontSize: 12),
+            style:
+                const TextStyle(color: AppTheme.onPrimary, fontSize: 12),
           ),
         ],
       ),
@@ -614,7 +701,8 @@ class _AlertBanner extends StatelessWidget {
                     color: color,
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    decoration: TextDecoration.underline)),
+                    decoration: TextDecoration.underline,
+                    decorationColor: color)),
           ),
         ],
       ),
@@ -622,7 +710,7 @@ class _AlertBanner extends StatelessWidget {
   }
 }
 
-// ── Empty state card ──────────────────────────────────────────────────────────
+// ── Empty card ────────────────────────────────────────────────────────────────
 class _EmptyCard extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -637,14 +725,16 @@ class _EmptyCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
+        border:
+            Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
           Icon(icon, size: 36, color: AppTheme.textSubtle),
           const SizedBox(height: 8),
           Text(message,
-              style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+              style: const TextStyle(
+                  color: AppTheme.textGrey, fontSize: 13)),
         ],
       ),
     );
@@ -665,7 +755,8 @@ class _HighlightCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.cardDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
+        border:
+            Border.all(color: AppTheme.borderDark.withValues(alpha: 0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -682,7 +773,8 @@ class _HighlightCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.star, size: 12, color: AppTheme.accentAmber),
+                    const Icon(Icons.star,
+                        size: 12, color: AppTheme.accentAmber),
                     const SizedBox(width: 3),
                     Text(
                       session.isMatch ? 'Match' : 'Training',
@@ -697,8 +789,8 @@ class _HighlightCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 DateFormat('d MMM').format(session.dateTime),
-                style:
-                    const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.textGrey),
               ),
             ],
           ),

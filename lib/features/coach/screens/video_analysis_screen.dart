@@ -129,10 +129,36 @@ class _VideoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            if (video.category != null && video.category!.isNotEmpty)
-              Text(video.category!,
-                  style: const TextStyle(
-                      fontSize: 11, color: AppTheme.textGrey)),
+            Row(
+              children: [
+                if (video.sport != null && video.sport!.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                          color: AppTheme.primaryGreen
+                              .withValues(alpha: 0.25)),
+                    ),
+                    child: Text(
+                      video.sport![0].toUpperCase() +
+                          video.sport!.substring(1),
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.primaryGreen,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                if (video.category != null && video.category!.isNotEmpty)
+                  Text(video.category!,
+                      style: const TextStyle(
+                          fontSize: 11, color: AppTheme.textGrey)),
+              ],
+            ),
             Text(
               DateFormat('d MMM yyyy').format(video.createdAt),
               style:
@@ -167,6 +193,7 @@ class _UploadSheetState extends State<_UploadSheet> {
   final _titleCtrl = TextEditingController();
   final _urlCtrl = TextEditingController();
   final _categoryCtrl = TextEditingController();
+  String? _sport;
   bool _saving = false;
 
   @override
@@ -224,6 +251,20 @@ class _UploadSheetState extends State<_UploadSheet> {
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
             ),
             const SizedBox(height: 14),
+            DropdownButtonFormField<String?>(
+              initialValue: _sport,
+              decoration: const InputDecoration(labelText: 'Sport (optional)'),
+              hint: const Text('All sports'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('All sports')),
+                ...AppConstants.sports.map((s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s[0].toUpperCase() + s.substring(1)),
+                    )),
+              ],
+              onChanged: (v) => setState(() => _sport = v),
+            ),
+            const SizedBox(height: 14),
             TextFormField(
               controller: _categoryCtrl,
               decoration: const InputDecoration(
@@ -256,6 +297,7 @@ class _UploadSheetState extends State<_UploadSheet> {
     await context.read<VideoProvider>().addVideo({
       'title': _titleCtrl.text.trim(),
       'videoUrl': _urlCtrl.text.trim(),
+      if (_sport != null) 'sport': _sport,
       if (_categoryCtrl.text.trim().isNotEmpty)
         'category': _categoryCtrl.text.trim(),
       'uploadedBy': auth.uid,

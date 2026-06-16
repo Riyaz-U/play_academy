@@ -131,6 +131,25 @@ class _DrillCard extends StatelessWidget {
                         letterSpacing: 0.8),
                   ),
                 ),
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.25)),
+                  ),
+                  child: Text(
+                    drill.sport[0].toUpperCase() + drill.sport.substring(1),
+                    style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryGreen,
+                        letterSpacing: 0.5),
+                  ),
+                ),
                 const Spacer(),
                 if (canEdit) ...[
                   IconButton(
@@ -245,6 +264,7 @@ class _DrillSheetState extends State<_DrillSheet> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _videoCtrl;
   late String _category;
+  late String _sport;
   bool _saving = false;
 
   @override
@@ -255,6 +275,7 @@ class _DrillSheetState extends State<_DrillSheet> {
     _descCtrl = TextEditingController(text: e?.description ?? '');
     _videoCtrl = TextEditingController(text: e?.videoUrl ?? '');
     _category = e?.category ?? DrillCategory.technical;
+    _sport = e?.sport ?? AppConstants.sports.first;
   }
 
   @override
@@ -304,6 +325,21 @@ class _DrillSheetState extends State<_DrillSheet> {
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Required' : null,
               textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 14),
+
+            // Sport
+            DropdownButtonFormField<String>(
+              key: ValueKey(_sport),
+              initialValue: _sport,
+              decoration: const InputDecoration(labelText: 'Sport'),
+              items: AppConstants.sports
+                  .map((s) => DropdownMenuItem(
+                        value: s,
+                        child: Text(s[0].toUpperCase() + s.substring(1)),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _sport = v!),
             ),
             const SizedBox(height: 14),
 
@@ -374,6 +410,7 @@ class _DrillSheetState extends State<_DrillSheet> {
       'title': _titleCtrl.text.trim(),
       'description': _descCtrl.text.trim(),
       'category': _category,
+      'sport': _sport,
       if (_videoCtrl.text.trim().isNotEmpty)
         'videoUrl': _videoCtrl.text.trim(),
       'organizationId': auth.organizationId,

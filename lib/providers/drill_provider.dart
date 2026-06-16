@@ -36,6 +36,9 @@ class DrillProvider extends ChangeNotifier {
     );
   }
 
+  List<DrillModel> getBySport(String sport) =>
+      _drills.where((d) => d.sport == sport).toList();
+
   Future<void> addDrill(Map<String, dynamic> data) =>
       _firestore.createDrill(data);
 

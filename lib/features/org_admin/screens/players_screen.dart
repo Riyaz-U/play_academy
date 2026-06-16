@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
 
 class OrgPlayersScreen extends StatefulWidget {
   const OrgPlayersScreen({super.key});
@@ -15,7 +14,6 @@ class OrgPlayersScreen extends StatefulWidget {
 
 class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
   String? _selectedBranchId;
-  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +24,7 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
     if (_selectedBranchId != null) {
       filtered = filtered.where((p) => p.branchId == _selectedBranchId).toList();
     }
-    if (_selectedCategory != null) {
-      filtered = filtered.where((p) => p.category == _selectedCategory).toList();
-    }
+    // category filter removed — category now lives in sportProfiles
 
     return Scaffold(
       appBar: AppBar(
@@ -70,27 +66,6 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
                       ],
                     ),
                   ),
-                const SizedBox(height: 6),
-                // Category filter
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _FilterChip(
-                        label: 'All',
-                        selected: _selectedCategory == null,
-                        onTap: () =>
-                            setState(() => _selectedCategory = null),
-                      ),
-                      ...AppConstants.categories.map((c) => _FilterChip(
-                            label: c,
-                            selected: _selectedCategory == c,
-                            onTap: () =>
-                                setState(() => _selectedCategory = c),
-                          )),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
@@ -128,18 +103,20 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
                             backgroundColor:
                                 AppTheme.primaryGreen.withValues(alpha: 0.1),
                             child: Text(
-                              '#${p.jerseyNumber}',
+                              p.name.isNotEmpty
+                                  ? p.name[0].toUpperCase()
+                                  : '?',
                               style: const TextStyle(
                                   color: AppTheme.primaryGreen,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 13),
+                                  fontSize: 16),
                             ),
                           ),
                           title: Text(p.name,
                               style: const TextStyle(
                                   fontWeight: FontWeight.w600)),
                           subtitle: Text(
-                            '${p.position} • ${p.category} • ${branch?.name ?? p.branchId}',
+                            'Age ${p.age} • ${branch?.name ?? p.branchId}',
                             style: const TextStyle(
                                 fontSize: 12, color: AppTheme.textGrey),
                           ),

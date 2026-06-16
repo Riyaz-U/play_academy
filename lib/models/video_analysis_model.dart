@@ -88,7 +88,8 @@ class VideoAnalysisModel {
   final String title;
   final String videoUrl;
   final String? thumbnailUrl;
-  final String? category; // match / training session title
+  final String? sport;
+  final String? category;
   final String uploadedBy;
   final String uploadedByName;
   final String organizationId;
@@ -100,6 +101,7 @@ class VideoAnalysisModel {
     required this.title,
     required this.videoUrl,
     this.thumbnailUrl,
+    this.sport,
     this.category,
     required this.uploadedBy,
     required this.uploadedByName,
@@ -114,6 +116,7 @@ class VideoAnalysisModel {
       title: map['title'] as String? ?? '',
       videoUrl: map['videoUrl'] as String? ?? '',
       thumbnailUrl: map['thumbnailUrl'] as String?,
+      sport: map['sport'] as String?,
       category: map['category'] as String?,
       uploadedBy: map['uploadedBy'] as String? ?? '',
       uploadedByName: map['uploadedByName'] as String? ?? '',
@@ -130,6 +133,7 @@ class VideoAnalysisModel {
         'videoUrl': videoUrl,
         if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty)
           'thumbnailUrl': thumbnailUrl,
+        if (sport != null) 'sport': sport,
         if (category != null && category!.isNotEmpty) 'category': category,
         'uploadedBy': uploadedBy,
         'uploadedByName': uploadedByName,

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/player_model.dart';
+import '../models/sport_profile_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
@@ -25,7 +26,6 @@ class PlayerProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  /// Player: listen to their own PlayerModel document (for stats, position, etc.)
   void listenToSelf(String uid) {
     _selfSub?.cancel();
     _selfSub = _firestoreService.streamPlayerById(uid).listen((player) {
@@ -34,7 +34,6 @@ class PlayerProvider extends ChangeNotifier {
     });
   }
 
-  /// Admin: listen to ALL players in the organization.
   void listenByOrg(String organizationId) {
     _subscription?.cancel();
     _subscription =
@@ -44,7 +43,6 @@ class PlayerProvider extends ChangeNotifier {
     });
   }
 
-  /// Coach: listen to players in a specific branch.
   void listenByBranch(String branchId) {
     _subscription?.cancel();
     _subscription =
@@ -57,21 +55,16 @@ class PlayerProvider extends ChangeNotifier {
   List<PlayerModel> getByBranch(String branchId) =>
       _players.where((p) => p.branchId == branchId).toList();
 
-  List<PlayerModel> getByCategory(String category) =>
-      _players.where((p) => p.category == category).toList();
-
   Future<bool> createPlayer({
     required String name,
     required String email,
     required String password,
     required int age,
-    required String position,
-    required int jerseyNumber,
     required String phone,
-    required String category,
     required String organizationId,
     required String branchId,
     required String adminUid,
+    required List<SportProfileModel> sportProfiles,
   }) async {
     _isLoading = true;
     _error = null;
@@ -82,7 +75,6 @@ class PlayerProvider extends ChangeNotifier {
         password: password,
       );
 
-      // User doc
       final userDoc = UserModel(
         uid: uid,
         name: name,
@@ -94,22 +86,24 @@ class PlayerProvider extends ChangeNotifier {
       );
       await _firestoreService.createUserDoc(uid, userDoc.toMap());
 
-      // Player doc
       final playerDoc = PlayerModel(
         uid: uid,
         name: name,
         email: email,
         age: age,
-        position: position,
-        jerseyNumber: jerseyNumber,
         phone: phone,
-        category: category,
         organizationId: organizationId,
         branchId: branchId,
         createdBy: adminUid,
         createdAt: DateTime.now(),
       );
       await _firestoreService.createPlayerDoc(uid, playerDoc.toMap());
+
+      for (final profile in sportProfiles) {
+        await _firestoreService.createSportProfile(
+            uid, profile.sport, profile.toMap());
+      }
+
       return true;
     } catch (e) {
       log('Error creating player: $e');
@@ -125,11 +119,12 @@ class PlayerProvider extends ChangeNotifier {
     required String uid,
     required String name,
     required int age,
-    required String position,
-    required int jerseyNumber,
     required String phone,
-    required String category,
     required String branchId,
+    String? parentName,
+    String? parentPhone,
+    String? parentEmail,
+    String? bio,
   }) async {
     _isLoading = true;
     _error = null;
@@ -138,11 +133,12 @@ class PlayerProvider extends ChangeNotifier {
       await _firestoreService.updatePlayerDoc(uid, {
         'name': name,
         'age': age,
-        'position': position,
-        'jerseyNumber': jerseyNumber,
         'phone': phone,
-        'category': category,
         'branchId': branchId,
+        'parentName': parentName,
+        'parentPhone': parentPhone,
+        'parentEmail': parentEmail,
+        'bio': bio,
       });
       return true;
     } catch (e) {
@@ -151,6 +147,43 @@ class PlayerProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<bool> addSportProfile(
+      String playerId, SportProfileModel profile) async {
+    try {
+      await _firestoreService.createSportProfile(
+          playerId, profile.sport, profile.toMap());
+      return true;
+    } catch (e) {
+      _error = _mapError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateSportProfile(
+      String playerId, SportProfileModel profile) async {
+    try {
+      await _firestoreService.updateSportProfile(
+          playerId, profile.sport, profile.toMap());
+      return true;
+    } catch (e) {
+      _error = _mapError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteSportProfile(String playerId, String sport) async {
+    try {
+      await _firestoreService.deleteSportProfile(playerId, sport);
+      return true;
+    } catch (e) {
+      _error = _mapError(e);
+      notifyListeners();
+      return false;
     }
   }
 

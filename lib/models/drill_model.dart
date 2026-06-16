@@ -4,7 +4,9 @@ class DrillModel {
   final String id;
   final String title;
   final String description;
-  final String category; // technical / tactical / physical / mental
+  final String category;
+  final String sport;
+  final String? teamId;
   final String? videoUrl;
   final String organizationId;
   final String branchId;
@@ -17,6 +19,8 @@ class DrillModel {
     required this.title,
     required this.description,
     required this.category,
+    required this.sport,
+    this.teamId,
     this.videoUrl,
     required this.organizationId,
     required this.branchId,
@@ -31,6 +35,8 @@ class DrillModel {
       title: map['title'] as String? ?? '',
       description: map['description'] as String? ?? '',
       category: map['category'] as String? ?? DrillCategory.technical,
+      sport: map['sport'] as String? ?? '',
+      teamId: map['teamId'] as String?,
       videoUrl: map['videoUrl'] as String?,
       organizationId: map['organizationId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
@@ -46,6 +52,8 @@ class DrillModel {
         'title': title,
         'description': description,
         'category': category,
+        'sport': sport,
+        if (teamId != null) 'teamId': teamId,
         if (videoUrl != null && videoUrl!.isNotEmpty) 'videoUrl': videoUrl,
         'organizationId': organizationId,
         'branchId': branchId,

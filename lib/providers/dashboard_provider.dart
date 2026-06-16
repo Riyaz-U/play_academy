@@ -5,6 +5,7 @@ import '../models/dashboard_model.dart';
 import '../models/payment_model.dart';
 import '../models/player_model.dart';
 import '../models/session_model.dart';
+import '../models/sport_profile_model.dart';
 import '../services/firestore_service.dart';
 
 class DashboardProvider extends ChangeNotifier {
@@ -22,11 +23,21 @@ class DashboardProvider extends ChangeNotifier {
   StreamSubscription<List<SessionModel>>? _sessionsSub;
   StreamSubscription<List<PaymentModel>>? _paymentsSub;
   StreamSubscription<List<AttendanceModel>>? _attendanceSub;
+  StreamSubscription<List<SportProfileModel>>? _sportProfilesSub;
 
   List<PlayerModel> _players = [];
   List<SessionModel> _sessions = [];
   List<PaymentModel> _payments = [];
   List<AttendanceModel> _attendance = [];
+  List<SportProfileModel> _sportProfiles = [];
+
+  Map<String, int> get playersBySport {
+    final map = <String, int>{};
+    for (final p in _sportProfiles) {
+      map[p.sport] = (map[p.sport] ?? 0) + 1;
+    }
+    return map;
+  }
 
   DashboardProvider(this._firestore);
 
@@ -41,6 +52,13 @@ class DashboardProvider extends ChangeNotifier {
     _sessionsSub?.cancel();
     _paymentsSub?.cancel();
     _attendanceSub?.cancel();
+    _sportProfilesSub?.cancel();
+
+    _sportProfilesSub =
+        _firestore.streamAllSportProfilesByBranch(branchId).listen((list) {
+      _sportProfiles = list;
+      _recompute();
+    }, onError: _onError);
 
     _playersSub = _firestore.streamPlayersByBranch(branchId).listen((list) {
       _players = list;
@@ -149,6 +167,7 @@ class DashboardProvider extends ChangeNotifier {
     _sessionsSub?.cancel();
     _paymentsSub?.cancel();
     _attendanceSub?.cancel();
+    _sportProfilesSub?.cancel();
     super.dispose();
   }
 }
