@@ -255,7 +255,8 @@ class FirestoreService {
           .collection(AppConstants.sportProfilesCollection)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => SportProfileModel.fromMap(d.data()))
+              .map((d) =>
+                  SportProfileModel.fromMap(d.data(), playerId: playerId))
               .toList());
 
   Future<SportProfileModel?> getSportProfile(
@@ -278,7 +279,8 @@ class FirestoreService {
           .where('sport', isEqualTo: sport)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => SportProfileModel.fromMap(d.data()))
+              .map((d) => SportProfileModel.fromMap(d.data(),
+                  playerId: d.reference.parent.parent?.id ?? ''))
               .toList());
 
   Stream<List<SportProfileModel>> streamAllSportProfilesByBranch(
@@ -288,7 +290,8 @@ class FirestoreService {
           .where('branchId', isEqualTo: branchId)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => SportProfileModel.fromMap(d.data()))
+              .map((d) => SportProfileModel.fromMap(d.data(),
+                  playerId: d.reference.parent.parent?.id ?? ''))
               .toList());
 
   // ── Teams ──────────────────────────────────────────────

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../core/constants/app_constants.dart';
 
 class SportProfileModel {
+  final String playerId;
   final String sport;
   final String branchId;
   final String category;
@@ -11,6 +12,7 @@ class SportProfileModel {
   final DateTime enrolledAt;
 
   const SportProfileModel({
+    this.playerId = '',
     required this.sport,
     required this.branchId,
     required this.category,
@@ -30,9 +32,11 @@ class SportProfileModel {
     return {for (final k in keys) k: 50};
   }
 
-  factory SportProfileModel.fromMap(Map<String, dynamic> map) {
+  factory SportProfileModel.fromMap(Map<String, dynamic> map,
+      {String playerId = ''}) {
     final rawStats = map['stats'] as Map<String, dynamic>? ?? {};
     return SportProfileModel(
+      playerId: playerId,
       sport: map['sport'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
       category: map['category'] as String? ?? 'Senior',
@@ -56,6 +60,7 @@ class SportProfileModel {
       };
 
   SportProfileModel copyWith({
+    String? playerId,
     String? sport,
     String? branchId,
     String? category,
@@ -65,6 +70,7 @@ class SportProfileModel {
     DateTime? enrolledAt,
   }) {
     return SportProfileModel(
+      playerId: playerId ?? this.playerId,
       sport: sport ?? this.sport,
       branchId: branchId ?? this.branchId,
       category: category ?? this.category,
