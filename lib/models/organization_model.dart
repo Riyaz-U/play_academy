@@ -8,6 +8,7 @@ class OrganizationModel {
   final String phone;
   final String? city;
   final DateTime createdAt;
+  final bool isActive;
 
   const OrganizationModel({
     required this.id,
@@ -17,6 +18,7 @@ class OrganizationModel {
     required this.phone,
     this.city,
     required this.createdAt,
+    this.isActive = true,
   });
 
   factory OrganizationModel.fromMap(Map<String, dynamic> map, String id) {
@@ -30,6 +32,7 @@ class OrganizationModel {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      isActive: map['isActive'] as bool? ?? true,
     );
   }
 
@@ -41,6 +44,7 @@ class OrganizationModel {
       'phone': phone,
       if (city != null) 'city': city,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
     };
   }
 }

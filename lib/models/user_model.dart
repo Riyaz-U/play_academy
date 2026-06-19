@@ -10,6 +10,7 @@ class UserModel {
   final String? branchId; // null for org_admin
   final String? fcmToken;
   final DateTime createdAt;
+  final bool isActive;
 
   const UserModel({
     required this.uid,
@@ -20,6 +21,7 @@ class UserModel {
     this.branchId,
     this.fcmToken,
     required this.createdAt,
+    this.isActive = true,
   });
 
   bool get isOrgAdmin => role == AppConstants.roleOrgAdmin;
@@ -38,6 +40,7 @@ class UserModel {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      isActive: map['isActive'] as bool? ?? true,
     );
   }
 
@@ -50,10 +53,11 @@ class UserModel {
       if (branchId != null) 'branchId': branchId,
       if (fcmToken != null) 'fcmToken': fcmToken,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
     };
   }
 
-  UserModel copyWith({String? name, String? fcmToken, String? branchId}) {
+  UserModel copyWith({String? name, String? fcmToken, String? branchId, bool? isActive}) {
     return UserModel(
       uid: uid,
       name: name ?? this.name,
@@ -63,6 +67,7 @@ class UserModel {
       branchId: branchId ?? this.branchId,
       fcmToken: fcmToken ?? this.fcmToken,
       createdAt: createdAt,
+      isActive: isActive ?? this.isActive,
     );
   }
 }

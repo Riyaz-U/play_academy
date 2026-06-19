@@ -128,6 +128,17 @@ class CoachProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> setActive(String uid, bool isActive) async {
+    try {
+      await _firestoreService.setCoachActive(uid, isActive);
+      return true;
+    } catch (e) {
+      _error = _mapError(e);
+      notifyListeners();
+      return false;
+    }
+  }
+
   String _mapError(Object e) {
     if (e is FirebaseAuthException) {
       switch (e.code) {

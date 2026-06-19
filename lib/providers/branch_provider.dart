@@ -94,6 +94,17 @@ class BranchProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> setActive(String id, bool isActive) async {
+    try {
+      await _firestoreService.setBranchActive(id, isActive);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
   BranchModel? getBranchById(String id) {
     try {
       return _branches.firstWhere((b) => b.id == id);

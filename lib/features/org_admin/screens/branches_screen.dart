@@ -56,54 +56,92 @@ class BranchesScreen extends StatelessWidget {
                     players.where((p) => p.branchId == branch.id).length;
                 final coachCount =
                     coaches.where((c) => c.branchId == branch.id).length;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    leading: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.account_tree,
-                          color: AppTheme.primaryGreen),
-                    ),
-                    title: Text(branch.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        if (branch.location.isNotEmpty)
-                          Text(branch.location,
-                              style: const TextStyle(fontSize: 12)),
-                        Text(
-                          '${branch.city} • $playerCount players • $coachCount coaches',
-                          style: const TextStyle(
-                              color: AppTheme.textGrey, fontSize: 12),
+                return Opacity(
+                  opacity: branch.isActive ? 1.0 : 0.55,
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) async {
-                        if (v == 'edit') {
-                          context.push('/org/branches/edit/${branch.id}');
-                        } else if (v == 'delete') {
-                          final confirmed = await _confirmDelete(context);
-                          if (confirmed && context.mounted) {
-                            context.read<BranchProvider>().deleteBranch(branch.id);
+                        child: const Icon(Icons.account_tree,
+                            color: AppTheme.primaryGreen),
+                      ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(branch.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          if (!branch.isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.textSubtle
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Inactive',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.textGrey,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                        ],
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          if (branch.location.isNotEmpty)
+                            Text(branch.location,
+                                style: const TextStyle(fontSize: 12)),
+                          Text(
+                            '${branch.city} • $playerCount players • $coachCount coaches',
+                            style: const TextStyle(
+                                color: AppTheme.textGrey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) async {
+                          if (v == 'edit') {
+                            context.push('/org/branches/edit/${branch.id}');
+                          } else if (v == 'toggle_active') {
+                            context
+                                .read<BranchProvider>()
+                                .setActive(branch.id, !branch.isActive);
+                          } else if (v == 'delete') {
+                            final confirmed = await _confirmDelete(context);
+                            if (confirmed && context.mounted) {
+                              context
+                                  .read<BranchProvider>()
+                                  .deleteBranch(branch.id);
+                            }
                           }
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                        const PopupMenuItem(
-                            value: 'delete',
-                            child: Text('Delete',
-                                style: TextStyle(color: AppTheme.errorRed))),
-                      ],
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                              value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(
+                            value: 'toggle_active',
+                            child: Text(
+                                branch.isActive ? 'Deactivate' : 'Activate'),
+                          ),
+                          const PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete',
+                                  style:
+                                      TextStyle(color: AppTheme.errorRed))),
+                        ],
+                      ),
                     ),
                   ),
                 );

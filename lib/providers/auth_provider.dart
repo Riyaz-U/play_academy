@@ -51,14 +51,21 @@ class AuthProvider extends ChangeNotifier {
       }
 
       if (_userModel != null) {
-        _status = AuthStatus.authenticated;
-        try {
-          await NotificationService().initialize(
-            user.uid,
-            isPlayer: _userModel!.isPlayer,
-          );
-        } catch (_) {
-          // Notification init failure should not block login
+        if (!_userModel!.isActive) {
+          _error = 'Your account has been deactivated. Please contact your administrator.';
+          await _authService.signOut();
+          _status = AuthStatus.unauthenticated;
+          _userModel = null;
+        } else {
+          _status = AuthStatus.authenticated;
+          try {
+            await NotificationService().initialize(
+              user.uid,
+              isPlayer: _userModel!.isPlayer,
+            );
+          } catch (_) {
+            // Notification init failure should not block login
+          }
         }
       } else {
         // Auth account exists but no Firestore doc after retries — sign out

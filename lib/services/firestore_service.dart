@@ -60,6 +60,22 @@ class FirestoreService {
           .doc(uid)
           .update({'fcmToken': token});
 
+  Future<void> setOrganizationActive(String orgId, bool isActive) =>
+      _db.collection(AppConstants.organizationsCollection).doc(orgId).update({'isActive': isActive});
+
+  Future<void> setBranchActive(String branchId, bool isActive) =>
+      _db.collection(AppConstants.branchesCollection).doc(branchId).update({'isActive': isActive});
+
+  Future<void> setCoachActive(String uid, bool isActive) async {
+    await _db.collection(AppConstants.coachesCollection).doc(uid).update({'isActive': isActive});
+    await _db.collection(AppConstants.usersCollection).doc(uid).update({'isActive': isActive});
+  }
+
+  Future<void> setPlayerActive(String uid, bool isActive) async {
+    await _db.collection(AppConstants.playersCollection).doc(uid).update({'isActive': isActive});
+    await _db.collection(AppConstants.usersCollection).doc(uid).update({'isActive': isActive});
+  }
+
   // ── Branches ───────────────────────────────────────────
 
   Future<String> createBranch(Map<String, dynamic> data) async {

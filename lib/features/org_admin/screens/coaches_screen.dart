@@ -51,51 +51,83 @@ class CoachesScreen extends StatelessWidget {
                 final branch = branches
                     .where((b) => b.id == c.branchId)
                     .firstOrNull;
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    leading: CircleAvatar(
-                      backgroundColor:
-                          AppTheme.accentAmber.withValues(alpha: 0.15),
-                      child: Text(
-                        c.name.isNotEmpty ? c.name[0].toUpperCase() : 'C',
-                        style: const TextStyle(
-                            color: AppTheme.accentAmber,
-                            fontWeight: FontWeight.bold),
+                return Opacity(
+                  opacity: c.isActive ? 1.0 : 0.55,
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16),
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            AppTheme.accentAmber.withValues(alpha: 0.15),
+                        child: Text(
+                          c.name.isNotEmpty ? c.name[0].toUpperCase() : 'C',
+                          style: const TextStyle(
+                              color: AppTheme.accentAmber,
+                              fontWeight: FontWeight.bold),
+                        ),
                       ),
-                    ),
-                    title: Text(c.name,
-                        style:
-                            const TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: Text(
-                      '${branch?.name ?? 'Unknown branch'} • ${c.phone}',
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textGrey),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (v) async {
-                        if (v == 'edit') {
-                          context.push('/org/coaches/edit/${c.uid}');
-                        } else if (v == 'delete') {
-                          final ok = await _confirmDelete(context);
-                          if (ok && context.mounted) {
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(c.name,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          if (!c.isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppTheme.textSubtle
+                                    .withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text('Inactive',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: AppTheme.textGrey,
+                                      fontWeight: FontWeight.w600)),
+                            ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        '${branch?.name ?? 'Unknown branch'} • ${c.phone}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.textGrey),
+                      ),
+                      trailing: PopupMenuButton<String>(
+                        onSelected: (v) async {
+                          if (v == 'edit') {
+                            context.push('/org/coaches/edit/${c.uid}');
+                          } else if (v == 'toggle_active') {
                             context
                                 .read<CoachProvider>()
-                                .deleteCoach(c.uid);
+                                .setActive(c.uid, !c.isActive);
+                          } else if (v == 'delete') {
+                            final ok = await _confirmDelete(context);
+                            if (ok && context.mounted) {
+                              context
+                                  .read<CoachProvider>()
+                                  .deleteCoach(c.uid);
+                            }
                           }
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                            value: 'edit', child: Text('Edit')),
-                        const PopupMenuItem(
-                          value: 'delete',
-                          child: Text('Delete',
-                              style:
-                                  TextStyle(color: AppTheme.errorRed)),
-                        ),
-                      ],
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                              value: 'edit', child: Text('Edit')),
+                          PopupMenuItem(
+                            value: 'toggle_active',
+                            child:
+                                Text(c.isActive ? 'Deactivate' : 'Activate'),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Text('Delete',
+                                style: TextStyle(color: AppTheme.errorRed)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );

@@ -93,56 +93,90 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
                       final branch = context
                           .read<BranchProvider>()
                           .getBranchById(p.branchId);
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: ListTile(
-                          onTap: () => context.push('/org/players/${p.uid}'),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          leading: CircleAvatar(
-                            backgroundColor:
-                                AppTheme.primaryGreen.withValues(alpha: 0.1),
-                            child: Text(
-                              p.name.isNotEmpty
-                                  ? p.name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                  color: AppTheme.primaryGreen,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16),
+                      return Opacity(
+                        opacity: p.isActive ? 1.0 : 0.55,
+                        child: Card(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          child: ListTile(
+                            onTap: () => context.push('/org/players/${p.uid}'),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  AppTheme.primaryGreen.withValues(alpha: 0.1),
+                              child: Text(
+                                p.name.isNotEmpty
+                                    ? p.name[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                    color: AppTheme.primaryGreen,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16),
+                              ),
                             ),
-                          ),
-                          title: Text(p.name,
+                            title: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(p.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                ),
+                                if (!p.isActive)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.textSubtle
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text('Inactive',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textGrey,
+                                            fontWeight: FontWeight.w600)),
+                                  ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              'Age ${p.age} • ${branch?.name ?? p.branchId}',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600)),
-                          subtitle: Text(
-                            'Age ${p.age} • ${branch?.name ?? p.branchId}',
-                            style: const TextStyle(
-                                fontSize: 12, color: AppTheme.textGrey),
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (v) async {
-                              if (v == 'edit') {
-                                context.push('/org/players/edit/${p.uid}');
-                              } else if (v == 'delete') {
-                                final ok = await _confirmDelete(context);
-                                if (ok && context.mounted) {
+                                  fontSize: 12, color: AppTheme.textGrey),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (v) async {
+                                if (v == 'edit') {
+                                  context.push('/org/players/edit/${p.uid}');
+                                } else if (v == 'toggle_active') {
                                   context
                                       .read<PlayerProvider>()
-                                      .deletePlayer(p.uid);
+                                      .setActive(p.uid, !p.isActive);
+                                } else if (v == 'delete') {
+                                  final ok = await _confirmDelete(context);
+                                  if (ok && context.mounted) {
+                                    context
+                                        .read<PlayerProvider>()
+                                        .deletePlayer(p.uid);
+                                  }
                                 }
-                              }
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                  value: 'edit', child: Text('Edit')),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Text('Delete',
-                                    style:
-                                        TextStyle(color: AppTheme.errorRed)),
-                              ),
-                            ],
+                              },
+                              itemBuilder: (_) => [
+                                const PopupMenuItem(
+                                    value: 'edit', child: Text('Edit')),
+                                PopupMenuItem(
+                                  value: 'toggle_active',
+                                  child: Text(p.isActive
+                                      ? 'Deactivate'
+                                      : 'Activate'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'delete',
+                                  child: Text('Delete',
+                                      style:
+                                          TextStyle(color: AppTheme.errorRed)),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );

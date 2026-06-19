@@ -7,6 +7,7 @@ class BranchModel {
   final String city;
   final String organizationId;
   final DateTime createdAt;
+  final bool isActive;
 
   const BranchModel({
     required this.id,
@@ -15,6 +16,7 @@ class BranchModel {
     required this.city,
     required this.organizationId,
     required this.createdAt,
+    this.isActive = true,
   });
 
   factory BranchModel.fromMap(Map<String, dynamic> map, String id) {
@@ -27,6 +29,7 @@ class BranchModel {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      isActive: map['isActive'] as bool? ?? true,
     );
   }
 
@@ -37,6 +40,7 @@ class BranchModel {
       'city': city,
       'organizationId': organizationId,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
     };
   }
 }

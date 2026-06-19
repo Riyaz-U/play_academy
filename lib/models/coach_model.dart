@@ -9,6 +9,7 @@ class CoachModel {
   final String branchId;
   final String createdBy;
   final DateTime createdAt;
+  final bool isActive;
 
   const CoachModel({
     required this.uid,
@@ -19,6 +20,7 @@ class CoachModel {
     required this.branchId,
     required this.createdBy,
     required this.createdAt,
+    this.isActive = true,
   });
 
   factory CoachModel.fromMap(Map<String, dynamic> map, String uid) {
@@ -33,6 +35,7 @@ class CoachModel {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      isActive: map['isActive'] as bool? ?? true,
     );
   }
 
@@ -45,6 +48,7 @@ class CoachModel {
       'branchId': branchId,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isActive': isActive,
     };
   }
 }
