@@ -29,6 +29,7 @@ class BranchProvider extends ChangeNotifier {
     required String location,
     required String city,
     required String organizationId,
+    String country = '',
   }) async {
     _isLoading = true;
     _error = null;
@@ -40,6 +41,7 @@ class BranchProvider extends ChangeNotifier {
         location: location,
         city: city,
         organizationId: organizationId,
+        country: country,
         createdAt: DateTime.now(),
       );
       await _firestoreService.createBranch(branch.toMap());
@@ -58,6 +60,7 @@ class BranchProvider extends ChangeNotifier {
     required String name,
     required String location,
     required String city,
+    String country = '',
   }) async {
     _isLoading = true;
     _error = null;
@@ -67,6 +70,7 @@ class BranchProvider extends ChangeNotifier {
         'name': name,
         'location': location,
         'city': city,
+        if (country.isNotEmpty) 'country': country else 'country': null,
       });
       return true;
     } catch (e) {

@@ -18,6 +18,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
   final _nameCtrl = TextEditingController();
   final _locationCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
+  final _countryCtrl = TextEditingController();
 
   bool get _isEditing => widget.branchId != null;
 
@@ -33,6 +34,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
           _nameCtrl.text = branch.name;
           _locationCtrl.text = branch.location;
           _cityCtrl.text = branch.city;
+          _countryCtrl.text = branch.country;
           setState(() {});
         }
       });
@@ -44,6 +46,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
     _nameCtrl.dispose();
     _locationCtrl.dispose();
     _cityCtrl.dispose();
+    _countryCtrl.dispose();
     super.dispose();
   }
 
@@ -57,6 +60,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
         name: _nameCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
         city: _cityCtrl.text.trim(),
+        country: _countryCtrl.text.trim(),
       );
     } else {
       final orgId =
@@ -65,6 +69,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
         name: _nameCtrl.text.trim(),
         location: _locationCtrl.text.trim(),
         city: _cityCtrl.text.trim(),
+        country: _countryCtrl.text.trim(),
         organizationId: orgId,
       );
     }
@@ -116,6 +121,17 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
                 ),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Enter city' : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _countryCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Country',
+                  prefixIcon: Icon(Icons.flag_outlined),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (v) =>
+                    v == null || v.isEmpty ? 'Enter country' : null,
               ),
               if (provider.error != null) ...[
                 const SizedBox(height: 12),

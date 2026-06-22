@@ -96,14 +96,14 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
                 ? [
                     IconButton(
                       icon: const Icon(Icons.edit_outlined,
-                          color: Colors.black54),
+                          color: AppTheme.onPrimary),
                       tooltip: 'Edit',
                       onPressed: () => context
                           .push('${widget.backRoute}/edit/${player.uid}'),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline,
-                          color: Colors.black54),
+                          color: AppTheme.onPrimary),
                       tooltip: 'Delete',
                       onPressed: () =>
                           _confirmDelete(context, player),

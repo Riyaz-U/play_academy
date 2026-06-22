@@ -6,6 +6,7 @@ class BranchModel {
   final String location;
   final String city;
   final String organizationId;
+  final String country;
   final DateTime createdAt;
   final bool isActive;
 
@@ -15,6 +16,7 @@ class BranchModel {
     required this.location,
     required this.city,
     required this.organizationId,
+    this.country = '',
     required this.createdAt,
     this.isActive = true,
   });
@@ -26,6 +28,7 @@ class BranchModel {
       location: map['location'] as String? ?? '',
       city: map['city'] as String? ?? '',
       organizationId: map['organizationId'] as String? ?? '',
+      country: map['country'] as String? ?? '',
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -39,6 +42,7 @@ class BranchModel {
       'location': location,
       'city': city,
       'organizationId': organizationId,
+      if (country.isNotEmpty) 'country': country,
       'createdAt': Timestamp.fromDate(createdAt),
       'isActive': isActive,
     };

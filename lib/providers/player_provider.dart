@@ -65,6 +65,11 @@ class PlayerProvider extends ChangeNotifier {
     required String branchId,
     required String adminUid,
     required List<SportProfileModel> sportProfiles,
+    String? parentName,
+    String? parentPhone,
+    String? parentEmail,
+    String? bio,
+    PlayerHealth health = const PlayerHealth(),
   }) async {
     _isLoading = true;
     _error = null;
@@ -96,6 +101,11 @@ class PlayerProvider extends ChangeNotifier {
         branchId: branchId,
         createdBy: adminUid,
         createdAt: DateTime.now(),
+        parentName: parentName,
+        parentPhone: parentPhone,
+        parentEmail: parentEmail,
+        bio: bio,
+        health: health,
       );
       await _firestoreService.createPlayerDoc(uid, playerDoc.toMap());
 
@@ -125,6 +135,7 @@ class PlayerProvider extends ChangeNotifier {
     String? parentPhone,
     String? parentEmail,
     String? bio,
+    PlayerHealth health = const PlayerHealth(),
   }) async {
     _isLoading = true;
     _error = null;
@@ -139,6 +150,7 @@ class PlayerProvider extends ChangeNotifier {
         'parentPhone': parentPhone,
         'parentEmail': parentEmail,
         'bio': bio,
+        if (!health.isEmpty) 'health': health.toMap() else 'health': null,
       });
       return true;
     } catch (e) {

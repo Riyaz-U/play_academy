@@ -60,7 +60,7 @@ class _AddEditTeamScreenState extends State<AddEditTeamScreen> {
 
   List<PlayerModel> get _filteredPlayers {
     final players = context.read<PlayerProvider>().players;
-    if (_search.isEmpty) return players;
+    if (_search.isEmpty) return players.where(  (p) => !_selectedPlayerIds.contains(p.uid)).toList();
     final q = _search.toLowerCase();
     return players.where((p) => p.name.toLowerCase().contains(q)).toList();
   }

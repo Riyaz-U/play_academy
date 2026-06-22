@@ -104,7 +104,7 @@ class BranchesScreen extends StatelessWidget {
                             Text(branch.location,
                                 style: const TextStyle(fontSize: 12)),
                           Text(
-                            '${branch.city} • $playerCount players • $coachCount coaches',
+                            '${branch.city}${branch.country.isNotEmpty ? ', ${branch.country}' : ''} • $playerCount players • $coachCount coaches',
                             style: const TextStyle(
                                 color: AppTheme.textGrey, fontSize: 12),
                           ),

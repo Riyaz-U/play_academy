@@ -6,6 +6,7 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../models/player_model.dart';
 import '../../../models/sport_profile_model.dart';
 import '../../../services/firestore_service.dart';
 
@@ -44,11 +45,26 @@ class AddEditPlayerScreen extends StatefulWidget {
 
 class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Personal
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _bioCtrl = TextEditingController();
+
+  // Parent / Guardian
+  final _parentNameCtrl = TextEditingController();
+  final _parentPhoneCtrl = TextEditingController();
+  final _parentEmailCtrl = TextEditingController();
+
+  // Health
+  final _heightCtrl = TextEditingController();
+  final _weightCtrl = TextEditingController();
+  final _bloodGroupCtrl = TextEditingController();
+  final _allergiesCtrl = TextEditingController();
+  final _medicationsCtrl = TextEditingController();
 
   String? _branchId;
   bool _obscure = true;
@@ -92,6 +108,15 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
       _ageCtrl.text = p.age.toString();
       _phoneCtrl.text = p.phone;
       _branchId = p.branchId;
+      _bioCtrl.text = p.bio ?? '';
+      _parentNameCtrl.text = p.parentName ?? '';
+      _parentPhoneCtrl.text = p.parentPhone ?? '';
+      _parentEmailCtrl.text = p.parentEmail ?? '';
+      _heightCtrl.text = p.health.height ?? '';
+      _weightCtrl.text = p.health.weight ?? '';
+      _bloodGroupCtrl.text = p.health.bloodGroup ?? '';
+      _allergiesCtrl.text = p.health.allergies ?? '';
+      _medicationsCtrl.text = p.health.medications ?? '';
 
       final profiles =
           await FirestoreService().streamSportProfiles(p.uid).first;
@@ -112,8 +137,35 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
     _passwordCtrl.dispose();
     _ageCtrl.dispose();
     _phoneCtrl.dispose();
+    _bioCtrl.dispose();
+    _parentNameCtrl.dispose();
+    _parentPhoneCtrl.dispose();
+    _parentEmailCtrl.dispose();
+    _heightCtrl.dispose();
+    _weightCtrl.dispose();
+    _bloodGroupCtrl.dispose();
+    _allergiesCtrl.dispose();
+    _medicationsCtrl.dispose();
     super.dispose();
   }
+
+  PlayerHealth get _health => PlayerHealth(
+        height: _heightCtrl.text.trim().isEmpty
+            ? null
+            : _heightCtrl.text.trim(),
+        weight: _weightCtrl.text.trim().isEmpty
+            ? null
+            : _weightCtrl.text.trim(),
+        bloodGroup: _bloodGroupCtrl.text.trim().isEmpty
+            ? null
+            : _bloodGroupCtrl.text.trim(),
+        allergies: _allergiesCtrl.text.trim().isEmpty
+            ? null
+            : _allergiesCtrl.text.trim(),
+        medications: _medicationsCtrl.text.trim().isEmpty
+            ? null
+            : _medicationsCtrl.text.trim(),
+      );
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
@@ -140,6 +192,17 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
         age: int.tryParse(_ageCtrl.text) ?? 0,
         phone: _phoneCtrl.text.trim(),
         branchId: _branchId!,
+        parentName: _parentNameCtrl.text.trim().isEmpty
+            ? null
+            : _parentNameCtrl.text.trim(),
+        parentPhone: _parentPhoneCtrl.text.trim().isEmpty
+            ? null
+            : _parentPhoneCtrl.text.trim(),
+        parentEmail: _parentEmailCtrl.text.trim().isEmpty
+            ? null
+            : _parentEmailCtrl.text.trim(),
+        bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
+        health: _health,
       );
       if (success) {
         // Sync sport profiles
@@ -148,10 +211,9 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
         final existingBySport = {for (final e in existing) e.sport: e};
         final newBySport = {for (final d in _enrollments) d.sport: d};
 
-        // Update / create
         for (final draft in _enrollments) {
-          final existing = existingBySport[draft.sport];
-          if (existing == null) {
+          final old = existingBySport[draft.sport];
+          if (old == null) {
             await provider.addSportProfile(
               widget.playerId!,
               SportProfileModel(
@@ -164,12 +226,12 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 enrolledAt: DateTime.now(),
               ),
             );
-          } else if (existing.position != draft.position ||
-              existing.category != draft.category ||
-              existing.jerseyNumber != draft.jerseyNumber) {
+          } else if (old.position != draft.position ||
+              old.category != draft.category ||
+              old.jerseyNumber != draft.jerseyNumber) {
             await provider.updateSportProfile(
               widget.playerId!,
-              existing.copyWith(
+              old.copyWith(
                 category: draft.category,
                 position: draft.position,
                 jerseyNumber: draft.jerseyNumber,
@@ -178,7 +240,6 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
           }
         }
 
-        // Delete removed sports
         for (final sport in existingBySport.keys) {
           if (!newBySport.containsKey(sport)) {
             await provider.deleteSportProfile(widget.playerId!, sport);
@@ -208,6 +269,17 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
         branchId: _branchId!,
         adminUid: adminUid,
         sportProfiles: sportProfiles,
+        parentName: _parentNameCtrl.text.trim().isEmpty
+            ? null
+            : _parentNameCtrl.text.trim(),
+        parentPhone: _parentPhoneCtrl.text.trim().isEmpty
+            ? null
+            : _parentPhoneCtrl.text.trim(),
+        parentEmail: _parentEmailCtrl.text.trim().isEmpty
+            ? null
+            : _parentEmailCtrl.text.trim(),
+        bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
+        health: _health,
       );
     }
 
@@ -250,12 +322,12 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // ── Section 1: Personal Info ──────────────────────────────
-              const _Label('Personal Info'),
+              const _SectionHeader('Personal Info'),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(
-                    labelText: 'Full Name',
+                    labelText: 'Full Name *',
                     prefixIcon: Icon(Icons.person)),
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Enter name' : null,
@@ -268,7 +340,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                       controller: _phoneCtrl,
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
-                          labelText: 'Phone',
+                          labelText: 'Phone *',
                           prefixIcon: Icon(Icons.phone)),
                       validator: (v) =>
                           v == null || v.isEmpty ? 'Enter phone' : null,
@@ -280,11 +352,13 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                       controller: _ageCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                          labelText: 'Age',
+                          labelText: 'Age *',
                           prefixIcon: Icon(Icons.cake_outlined)),
                       validator: (v) {
                         if (v == null || v.isEmpty) return 'Enter age';
-                        if (int.tryParse(v) == null) return 'Invalid';
+                        final n = int.tryParse(v);
+                        if (n == null) return 'Invalid number';
+                        if (n < 1 || n > 100) return 'Enter a valid age';
                         return null;
                       },
                     ),
@@ -296,7 +370,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 key: ValueKey(_branchId),
                 initialValue: _branchId,
                 decoration: const InputDecoration(
-                    labelText: 'Branch',
+                    labelText: 'Branch *',
                     prefixIcon: Icon(Icons.location_on_outlined)),
                 hint: const Text('Select branch'),
                 items: branches
@@ -306,17 +380,28 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 onChanged: (v) => setState(() => _branchId = v),
                 validator: (v) => v == null ? 'Select branch' : null,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _bioCtrl,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Bio (optional)',
+                  prefixIcon: Icon(Icons.notes_outlined),
+                  alignLabelWithHint: true,
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
               const SizedBox(height: 24),
 
               // ── Section 2: Credentials (add only) ────────────────────
               if (!_isEditing) ...[
-                const _Label('Login Credentials'),
+                const _SectionHeader('Login Credentials'),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Email *',
                       prefixIcon: Icon(Icons.email_outlined)),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter email';
@@ -329,7 +414,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                   controller: _passwordCtrl,
                   obscureText: _obscure,
                   decoration: InputDecoration(
-                    labelText: 'Temporary Password',
+                    labelText: 'Temporary Password *',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(_obscure
@@ -353,10 +438,122 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // ── Section 3: Sport Enrollments ──────────────────────────
+              // ── Section 3: Parent / Guardian ──────────────────────────
+              const _SectionHeader('Parent / Guardian'),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _parentNameCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Parent Name',
+                    prefixIcon: Icon(Icons.person_outline)),
+                textCapitalization: TextCapitalization.words,
+              ),
+              const SizedBox(height: 12),
               Row(
                 children: [
-                  const _Label('Sport Enrollments'),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _parentPhoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(
+                          labelText: 'Parent Phone',
+                          prefixIcon: Icon(Icons.phone_outlined)),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        if (v.trim().length < 7) return 'Too short';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _parentEmailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                          labelText: 'Parent Email',
+                          prefixIcon: Icon(Icons.email_outlined)),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        if (!v.contains('@') || !v.contains('.')) {
+                          return 'Invalid email';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ── Section 4: Health ─────────────────────────────────────
+              const _SectionHeader('Health Info'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _heightCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Height (cm)',
+                          prefixIcon: Icon(Icons.height)),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        final n = double.tryParse(v.trim());
+                        if (n == null || n <= 0) return 'Invalid height';
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _weightCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Weight (kg)',
+                          prefixIcon: Icon(Icons.monitor_weight_outlined)),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return null;
+                        final n = double.tryParse(v.trim());
+                        if (n == null || n <= 0) return 'Invalid weight';
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _bloodGroupCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Blood Group',
+                    prefixIcon: Icon(Icons.bloodtype_outlined),
+                    hintText: 'e.g. A+, O-'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _allergiesCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Allergies',
+                    prefixIcon: Icon(Icons.warning_amber_outlined)),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _medicationsCtrl,
+                decoration: const InputDecoration(
+                    labelText: 'Current Medications',
+                    prefixIcon: Icon(Icons.medication_outlined)),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 24),
+
+              // ── Section 5: Sport Enrollments ──────────────────────────
+              Row(
+                children: [
+                  const _SectionHeader('Sport Enrollments'),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: _canAddMore
@@ -418,6 +615,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                       : Text(_isEditing ? 'Save Changes' : 'Create Player'),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -486,7 +684,7 @@ class _EnrollmentCardState extends State<_EnrollmentCard> {
     return AppConstants.sports
         .where((s) => !widget.usedSports.contains(s))
         .toSet()
-      ..add(widget.draft.sport); // always include current sport
+      ..add(widget.draft.sport);
   }
 
   @override
@@ -643,9 +841,9 @@ class _EnrollmentCardState extends State<_EnrollmentCard> {
   }
 }
 
-class _Label extends StatelessWidget {
+class _SectionHeader extends StatelessWidget {
   final String text;
-  const _Label(this.text);
+  const _SectionHeader(this.text);
   @override
   Widget build(BuildContext context) => Text(text,
       style: const TextStyle(
