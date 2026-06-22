@@ -18,8 +18,6 @@ class RegisterOrgScreen extends StatefulWidget {
 class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
   final _formKey = GlobalKey<FormState>();
   final _orgNameCtrl = TextEditingController();
-  final _adminNameCtrl = TextEditingController();
-  final _cityCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -35,8 +33,6 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
   @override
   void dispose() {
     _orgNameCtrl.dispose();
-    _adminNameCtrl.dispose();
-    _cityCtrl.dispose();
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
@@ -74,10 +70,8 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
       final org = OrganizationModel(
         id: uid,
         name: _orgNameCtrl.text.trim(),
-        adminName: _adminNameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
-        city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
         createdAt: DateTime.now(),
       );
       await _firestoreService.createOrganization(uid, org.toMap())
@@ -86,7 +80,7 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
       // 3. Create user doc
       final user = UserModel(
         uid: uid,
-        name: _adminNameCtrl.text.trim(),
+        name: _orgNameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
         role: AppConstants.roleOrgAdmin,
         organizationId: uid,
@@ -199,32 +193,12 @@ class _RegisterOrgScreenState extends State<RegisterOrgScreen> {
                           v == null || v.isEmpty ? 'Enter phone' : null,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _cityCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'City (optional)',
-                        prefixIcon: Icon(Icons.location_city),
-                      ),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 24),
 
               // Admin info
               _SectionLabel('Admin Account'),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _adminNameCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Your Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Enter your name' : null,
-              ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _emailCtrl,

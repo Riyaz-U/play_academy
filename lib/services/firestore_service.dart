@@ -310,6 +310,17 @@ class FirestoreService {
                   playerId: d.reference.parent.parent?.id ?? ''))
               .toList());
 
+  Stream<List<SportProfileModel>> streamAllSportProfilesByOrg(
+          String organizationId) =>
+      _db
+          .collectionGroup(AppConstants.sportProfilesCollection)
+          .where('organizationId', isEqualTo: organizationId)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => SportProfileModel.fromMap(d.data(),
+                  playerId: d.reference.parent.parent?.id ?? ''))
+              .toList());
+
   // ── Teams ──────────────────────────────────────────────
 
   Future<String> createTeam(Map<String, dynamic> data) async {

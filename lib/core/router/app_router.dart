@@ -8,6 +8,7 @@ import '../../features/org_admin/screens/org_admin_shell.dart';
 import '../../features/org_admin/screens/org_dashboard.dart';
 import '../../features/org_admin/screens/branches_screen.dart';
 import '../../features/org_admin/screens/add_edit_branch_screen.dart';
+import '../../features/org_admin/screens/branch_detail_screen.dart';
 import '../../features/org_admin/screens/players_screen.dart';
 import '../../features/org_admin/screens/add_edit_player_screen.dart';
 import '../../features/org_admin/screens/coaches_screen.dart';
@@ -144,6 +145,10 @@ GoRouter createRouter(AuthProvider authProvider) {
           path: '/org/branches/edit/:id',
           builder: (_, state) =>
               AddEditBranchScreen(branchId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/org/branches/:id',
+          builder: (_, state) =>
+              BranchDetailScreen(branchId: state.pathParameters['id']!)),
       GoRoute(
           path: '/org/players/add',
           builder: (_, _) => const AddEditPlayerScreen()),

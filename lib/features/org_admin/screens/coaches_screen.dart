@@ -37,7 +37,7 @@ class CoachesScreen extends StatelessWidget {
                   Padding(padding:  const EdgeInsets.symmetric(horizontal: 16),
                     child: ElevatedButton(
                       onPressed: () => context.push('/org/coaches/add'),
-                      child: const Text('Add First Coach'),
+                      child: const Text('Add First Coach', style: TextStyle(color: AppTheme.onPrimary)),
                     ),
                   ),
                 ],

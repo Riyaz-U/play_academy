@@ -17,15 +17,43 @@ class OrgDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final branches = context.watch<BranchProvider>().branches;
-    final players = context.watch<PlayerProvider>().players;
+    final playerProvider = context.watch<PlayerProvider>();
+    final players = playerProvider.players;
     final coaches = context.watch<CoachProvider>().coaches;
+    final playersBySport = playerProvider.playersBySport;
     final user = auth.userModel;
+
+    // Inactive counts
+    final inactivePlayers = players.where((p) => !p.isActive).length;
+    final inactiveCoaches = coaches.where((c) => !c.isActive).length;
+    final inactiveBranches = branches.where((b) => !b.isActive).length;
+    final totalInactive = inactivePlayers + inactiveCoaches + inactiveBranches;
 
     // Players per branch
     final playersPerBranch = {
       for (final b in branches)
         b.id: players.where((p) => p.branchId == b.id).length,
     };
+
+
+    // Recent additions (players + coaches merged, newest first)
+    final recentMembers = <_RecentMember>[
+      ...players.map((p) => _RecentMember(
+            uid: p.uid,
+            name: p.name,
+            branchId: p.branchId,
+            createdAt: p.createdAt,
+            isPlayer: true,
+          )),
+      ...coaches.map((c) => _RecentMember(
+            uid: c.uid,
+            name: c.name,
+            branchId: c.branchId,
+            createdAt: c.createdAt,
+            isPlayer: false,
+          )),
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final recentSlice = recentMembers.take(5).toList();
 
     // Players per branch (sorted for pie chart)
     final branchEntries = playersPerBranch.entries
@@ -53,11 +81,24 @@ class OrgDashboard extends StatelessWidget {
             itemBuilder: (_) => [
               PopupMenuItem(
                 enabled: false,
-                child: Text(
-                  user?.name ?? '',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDark),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      user?.name ?? '',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textDark,
+                          fontSize: 14),
+                    ),
+                    const Text(
+                      'Academy Admin',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.textGrey),
+                    ),
+                  ],
                 ),
               ),
               const PopupMenuDivider(),
@@ -124,10 +165,12 @@ class OrgDashboard extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MetricCard(
-                            label: 'Branches',
-                            value: '${branches.length}',
-                            icon: Icons.location_on_outlined,
-                            color: AppTheme.accentAmber,
+                            label: 'Inactive',
+                            value: '$totalInactive',
+                            icon: Icons.person_off_outlined,
+                            color: totalInactive > 0
+                                ? AppTheme.errorRed
+                                : AppTheme.accentAmber,
                           ),
                         ),
                       ],
@@ -136,6 +179,59 @@ class OrgDashboard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
+
+              // Sport breakdown
+              if (playersBySport.isNotEmpty) ...[
+                _SectionHeader(title: 'Players by Sport'),
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: (playersBySport.entries.toList()
+                          ..sort((a, b) => b.value.compareTo(a.value)))
+                        .map((e) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: _SportChip(
+                                sport: e.key,
+                                count: e.value,
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Inactive alerts
+              if (totalInactive > 0) ...[
+                _SectionHeader(title: 'Attention Needed'),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (inactivePlayers > 0)
+                      _AlertChip(
+                        label: '$inactivePlayers inactive player${inactivePlayers > 1 ? 's' : ''}',
+                        icon: Icons.person_off_outlined,
+                        onTap: () => context.go('/org/players'),
+                      ),
+                    if (inactiveCoaches > 0)
+                      _AlertChip(
+                        label: '$inactiveCoaches inactive coach${inactiveCoaches > 1 ? 'es' : ''}',
+                        icon: Icons.sports_outlined,
+                        onTap: () => context.go('/org/coaches'),
+                      ),
+                    if (inactiveBranches > 0)
+                      _AlertChip(
+                        label: '$inactiveBranches inactive branch${inactiveBranches > 1 ? 'es' : ''}',
+                        icon: Icons.account_tree_outlined,
+                        onTap: () => context.go('/org/branches'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Players per branch chart
               if (branches.isNotEmpty && players.isNotEmpty) ...[
@@ -156,40 +252,98 @@ class OrgDashboard extends StatelessWidget {
                 const SizedBox(height: 24),
               ],
 
-              // Quick Actions
-              _SectionHeader(title: 'Quick Actions'),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Icons.add_business,
-                      label: 'Add Branch',
-                      color: AppTheme.primaryGreen,
-                      onTap: () => context.push('/org/branches/add'),
+              // Recent additions
+              if (recentSlice.isNotEmpty) ...[
+                _SectionHeader(title: 'Recent Additions'),
+                const SizedBox(height: 10),
+                ...recentSlice.map((m) {
+                  final branchName = branches
+                      .where((b) => b.id == m.branchId)
+                      .firstOrNull
+                      ?.name ?? '';
+                  return _RecentMemberTile(
+                    member: m,
+                    branchName: branchName,
+                    onTap: () => m.isPlayer
+                        ? context.push('/org/players/${m.uid}')
+                        : null,
+                  );
+                }),
+                const SizedBox(height: 24),
+              ],
+
+              // Quick Actions (only shown once academy is fully set up)
+              if (branches.isNotEmpty && coaches.isNotEmpty && players.isNotEmpty) ...[
+                _SectionHeader(title: 'Quick Actions'),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.add_business,
+                        label: 'Add Branch',
+                        color: AppTheme.primaryGreen,
+                        onTap: () => context.push('/org/branches/add'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Icons.person_add,
-                      label: 'Add Player',
-                      color: Colors.blue.shade600,
-                      onTap: () => context.push('/org/players/add'),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.person_add,
+                        label: 'Add Player',
+                        color: Colors.blue.shade600,
+                        onTap: () => context.push('/org/players/add'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Icons.sports,
-                      label: 'Add Coach',
-                      color: AppTheme.accentAmber,
-                      onTap: () => context.push('/org/coaches/add'),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _ActionButton(
+                        icon: Icons.sports,
+                        label: 'Add Coach',
+                        color: AppTheme.accentAmber,
+                        onTap: () => context.push('/org/coaches/add'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+
+              // Get started checklist (shown until all 3 steps done)
+              if (branches.isEmpty || coaches.isEmpty || players.isEmpty) ...[
+                _SectionHeader(
+                    title: branches.isEmpty ? 'Get Started' : 'Next Steps'),
+                const SizedBox(height: 10),
+                _GetStartedCard(
+                  steps: [
+                    _SetupStep(
+                      label: 'Create your first branch',
+                      description: 'A branch is a physical location where training happens.',
+                      isDone: branches.isNotEmpty,
+                      onTap: branches.isEmpty
+                          ? () => context.push('/org/branches/add')
+                          : null,
+                    ),
+                    _SetupStep(
+                      label: 'Add a coach',
+                      description: 'Coaches manage sessions, drills and player progress.',
+                      isDone: coaches.isNotEmpty,
+                      onTap: branches.isNotEmpty && coaches.isEmpty
+                          ? () => context.push('/org/coaches/add')
+                          : null,
+                    ),
+                    _SetupStep(
+                      label: 'Add your first player',
+                      description: 'Players can log in, track attendance and view stats.',
+                      isDone: players.isNotEmpty,
+                      onTap: branches.isNotEmpty && players.isEmpty
+                          ? () => context.push('/org/players/add')
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
 
               // Branches list
               if (branches.isNotEmpty) ...[
@@ -203,37 +357,9 @@ class OrgDashboard extends StatelessWidget {
                     branch: branch,
                     playerCount: bp,
                     coachCount: bc,
-                    onTap: () => context.go('/org/branches'),
+                    onTap: () => context.push('/org/branches/${branch.id}'),
                   );
                 }),
-              ] else ...[
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 32),
-                    child: Column(
-                      children: [
-                        Icon(Icons.account_tree_outlined,
-                            size: 64, color: AppTheme.textSubtle),
-                        const SizedBox(height: 12),
-                        const Text('No branches yet',
-                            style: TextStyle(color: AppTheme.textGrey)),
-                        const SizedBox(height: 8),
-                        ElevatedButton.icon(
-                          onPressed: () => context.push('/org/branches/add'),
-                          icon: const Icon(Icons.add),
-                          label: const Padding(
-                            padding: EdgeInsets.only(right: 16, top: 10, bottom: 10),
-                            child: Text('Create First Branch', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
               ],
               const SizedBox(height: 24),
             ],
@@ -274,9 +400,6 @@ class _WelcomeBanner extends StatelessWidget {
               style: TextStyle(
                   color: AppTheme.onPrimary, fontSize: 12)),
           const SizedBox(height: 4),
-          Text('Welcome back,',
-              style: TextStyle(
-                  color: AppTheme.onPrimary, fontSize: 14)),
           Text(
             name,
             style: const TextStyle(
@@ -284,6 +407,11 @@ class _WelcomeBanner extends StatelessWidget {
                 fontSize: 22,
                 fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 2),
+          Text('Admin Dashboard',
+              style: TextStyle(
+                  color: AppTheme.onPrimary.withValues(alpha: 0.8),
+                  fontSize: 13)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -668,6 +796,303 @@ class _BranchCard extends StatelessWidget {
         trailing:
             const Icon(Icons.chevron_right, color: AppTheme.textGrey),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+// ── Recent Member Tile ───────────────────────────────────
+
+class _RecentMemberTile extends StatelessWidget {
+  final _RecentMember member;
+  final String branchName;
+  final VoidCallback? onTap;
+
+  const _RecentMemberTile({
+    required this.member,
+    required this.branchName,
+    this.onTap,
+  });
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return DateFormat('d MMM').format(dt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPlayer = member.isPlayer;
+    final color = isPlayer ? AppTheme.neonCyan : AppTheme.accentAmber;
+    final initial = member.name.isNotEmpty ? member.name[0].toUpperCase() : '?';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundColor: color.withValues(alpha: 0.15),
+          child: Text(initial,
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+        ),
+        title: Text(member.name,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text(
+          branchName.isNotEmpty ? branchName : '—',
+          style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                isPlayer ? 'Player' : 'Coach',
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: color),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(_timeAgo(member.createdAt),
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.textSubtle)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Get Started Card ─────────────────────────────────────
+
+class _SetupStep {
+  final String label;
+  final String description;
+  final bool isDone;
+  final VoidCallback? onTap;
+  const _SetupStep({
+    required this.label,
+    required this.description,
+    required this.isDone,
+    this.onTap,
+  });
+}
+
+class _GetStartedCard extends StatelessWidget {
+  final List<_SetupStep> steps;
+  const _GetStartedCard({required this.steps});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.borderDark),
+      ),
+      child: Column(
+        children: steps.asMap().entries.map((entry) {
+          final i = entry.key;
+          final step = entry.value;
+          final isLast = i == steps.length - 1;
+
+          return Column(
+            children: [
+              InkWell(
+                onTap: step.onTap,
+                borderRadius: BorderRadius.only(
+                  topLeft: i == 0 ? const Radius.circular(14) : Radius.zero,
+                  topRight: i == 0 ? const Radius.circular(14) : Radius.zero,
+                  bottomLeft: isLast ? const Radius.circular(14) : Radius.zero,
+                  bottomRight: isLast ? const Radius.circular(14) : Radius.zero,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  child: Row(
+                    children: [
+                      // Step indicator
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: step.isDone
+                              ? AppTheme.primaryGreen.withValues(alpha: 0.15)
+                              : AppTheme.textSubtle.withValues(alpha: 0.12),
+                          border: Border.all(
+                            color: step.isDone
+                                ? AppTheme.primaryGreen
+                                : AppTheme.borderDark,
+                          ),
+                        ),
+                        child: step.isDone
+                            ? const Icon(Icons.check,
+                                size: 16, color: AppTheme.primaryGreen)
+                            : Center(
+                                child: Text('${i + 1}',
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: AppTheme.textSubtle))),
+                      ),
+                      const SizedBox(width: 14),
+                      // Text
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              step.label,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                  color: step.isDone
+                                      ? AppTheme.textGrey
+                                      : AppTheme.textDark,
+                                  decoration: step.isDone
+                                      ? TextDecoration.lineThrough
+                                      : null),
+                            ),
+                            if (!step.isDone) ...[
+                              const SizedBox(height: 2),
+                              Text(step.description,
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.textGrey)),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Arrow if actionable
+                      if (step.onTap != null)
+                        const Icon(Icons.arrow_forward_ios,
+                            size: 14, color: AppTheme.primaryGreen),
+                    ],
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: AppTheme.borderDark,
+                    indent: 62),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Recent Member data class ─────────────────────────────
+
+class _RecentMember {
+  final String uid;
+  final String name;
+  final String branchId;
+  final DateTime createdAt;
+  final bool isPlayer;
+  const _RecentMember({
+    required this.uid,
+    required this.name,
+    required this.branchId,
+    required this.createdAt,
+    required this.isPlayer,
+  });
+}
+
+// ── Sport Chip ───────────────────────────────────────────
+
+class _SportChip extends StatelessWidget {
+  final String sport;
+  final int count;
+  const _SportChip({required this.sport, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.cardDark,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.primaryGreen.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            sport[0].toUpperCase() + sport.substring(1),
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDark),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.primaryGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Alert Chip ───────────────────────────────────────────
+
+class _AlertChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  const _AlertChip({required this.label, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.errorRed.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.errorRed.withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: AppTheme.errorRed),
+            const SizedBox(width: 6),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.errorRed,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right, size: 14, color: AppTheme.errorRed),
+          ],
+        ),
       ),
     );
   }

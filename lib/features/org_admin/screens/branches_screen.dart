@@ -41,7 +41,7 @@ class BranchesScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: ElevatedButton(
                       onPressed: () => context.push('/org/branches/add'),
-                      child: const Text('Create First Branch'),
+                      child: const Text('Create First Branch', style: TextStyle(color: AppTheme.onPrimary)),
                     ),
                   ),
                 ],
@@ -61,6 +61,7 @@ class BranchesScreen extends StatelessWidget {
                   child: Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
+                      onTap: () => context.push('/org/branches/${branch.id}'),
                       contentPadding: const EdgeInsets.all(16),
                       leading: Container(
                         width: 48,

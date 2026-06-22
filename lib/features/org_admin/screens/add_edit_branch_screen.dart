@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import 'location_picker_screen.dart';
 
 class AddEditBranchScreen extends StatefulWidget {
   final String? branchId;
@@ -20,6 +22,8 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
   final _cityCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
 
+  LatLng? _pickedLocation;
+
   bool get _isEditing => widget.branchId != null;
 
   @override
@@ -35,6 +39,9 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
           _locationCtrl.text = branch.location;
           _cityCtrl.text = branch.city;
           _countryCtrl.text = branch.country;
+          if (branch.latitude != null && branch.longitude != null) {
+            _pickedLocation = LatLng(branch.latitude!, branch.longitude!);
+          }
           setState(() {});
         }
       });
@@ -50,6 +57,21 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
     super.dispose();
   }
 
+  Future<void> _openMapPicker() async {
+    final result = await Navigator.push<LatLng?>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialLat: _pickedLocation?.latitude,
+          initialLng: _pickedLocation?.longitude,
+        ),
+      ),
+    );
+    if (result != null) {
+      setState(() => _pickedLocation = result);
+    }
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final provider = context.read<BranchProvider>();
@@ -61,6 +83,8 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
         location: _locationCtrl.text.trim(),
         city: _cityCtrl.text.trim(),
         country: _countryCtrl.text.trim(),
+        latitude: _pickedLocation?.latitude,
+        longitude: _pickedLocation?.longitude,
       );
     } else {
       final orgId =
@@ -71,6 +95,8 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
         city: _cityCtrl.text.trim(),
         country: _countryCtrl.text.trim(),
         organizationId: orgId,
+        latitude: _pickedLocation?.latitude,
+        longitude: _pickedLocation?.longitude,
       );
     }
     if (success && mounted) context.pop();
@@ -92,11 +118,12 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
                 controller: _nameCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Branch Name',
+                  labelText: 'Branch Name *',
                   prefixIcon: Icon(Icons.account_tree),
                 ),
                 validator: (v) =>
@@ -106,7 +133,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
               TextFormField(
                 controller: _locationCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Address / Location',
+                  labelText: 'Address / Location *',
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
                 validator: (v) =>
@@ -116,7 +143,7 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
               TextFormField(
                 controller: _cityCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'City',
+                  labelText: 'City *',
                   prefixIcon: Icon(Icons.location_city),
                 ),
                 validator: (v) =>
@@ -126,13 +153,93 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
               TextFormField(
                 controller: _countryCtrl,
                 decoration: const InputDecoration(
-                  labelText: 'Country',
+                  labelText: 'Country *',
                   prefixIcon: Icon(Icons.flag_outlined),
                 ),
                 textCapitalization: TextCapitalization.words,
                 validator: (v) =>
                     v == null || v.isEmpty ? 'Enter country' : null,
               ),
+              const SizedBox(height: 20),
+
+              // ── Map location picker ───────────────────────────────────
+              const Text('Map Location',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textGrey)),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _openMapPicker,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.cardDark,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _pickedLocation != null
+                          ? AppTheme.primaryGreen.withValues(alpha: 0.5)
+                          : Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: _pickedLocation == null
+                      ? Row(
+                          children: [
+                            Icon(Icons.map_outlined,
+                                color: AppTheme.primaryGreen, size: 20),
+                            const SizedBox(width: 10),
+                            const Text('Tap to pick location on map',
+                                style: TextStyle(
+                                    color: AppTheme.textGrey, fontSize: 14)),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            const Icon(Icons.location_pin,
+                                color: AppTheme.primaryGreen, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Location selected',
+                                      style: TextStyle(
+                                          color: AppTheme.primaryGreen,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13)),
+                                  Text(
+                                    '${_pickedLocation!.latitude.toStringAsFixed(5)}, ${_pickedLocation!.longitude.toStringAsFixed(5)}',
+                                    style: const TextStyle(
+                                        color: AppTheme.textGrey,
+                                        fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.edit_outlined,
+                                  size: 18, color: AppTheme.textGrey),
+                              onPressed: _openMapPicker,
+                              tooltip: 'Change',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                            const SizedBox(width: 4),
+                            IconButton(
+                              icon: const Icon(Icons.close,
+                                  size: 18, color: AppTheme.textGrey),
+                              onPressed: () =>
+                                  setState(() => _pickedLocation = null),
+                              tooltip: 'Remove',
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+
               if (provider.error != null) ...[
                 const SizedBox(height: 12),
                 Text(provider.error!,
@@ -151,9 +258,14 @@ class _AddEditBranchScreenState extends State<AddEditBranchScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(_isEditing ? 'Save Changes' : 'Create Branch', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
+                      : Text(
+                          _isEditing ? 'Save Changes' : 'Create Branch',
+                          style: const TextStyle(
+                              fontSize: 14, color: AppTheme.onPrimary),
+                        ),
                 ),
               ),
+              const SizedBox(height: 20),
             ],
           ),
         ),

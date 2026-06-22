@@ -15,16 +15,26 @@ class PlayerProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
 
   List<PlayerModel> _players = [];
+  List<SportProfileModel> _orgSportProfiles = [];
   PlayerModel? _self;
   bool _isLoading = false;
   String? _error;
   StreamSubscription<List<PlayerModel>>? _subscription;
+  StreamSubscription<List<SportProfileModel>>? _sportSub;
   StreamSubscription<PlayerModel?>? _selfSub;
 
   List<PlayerModel> get players => _players;
   PlayerModel? get self => _self;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  Map<String, int> get playersBySport {
+    final map = <String, int>{};
+    for (final p in _orgSportProfiles) {
+      if (p.sport.isNotEmpty) map[p.sport] = (map[p.sport] ?? 0) + 1;
+    }
+    return map;
+  }
 
   void listenToSelf(String uid) {
     _selfSub?.cancel();
@@ -39,6 +49,13 @@ class PlayerProvider extends ChangeNotifier {
     _subscription =
         _firestoreService.streamPlayersByOrg(organizationId).listen((list) {
       _players = list;
+      notifyListeners();
+    });
+    _sportSub?.cancel();
+    _sportSub = _firestoreService
+        .streamAllSportProfilesByOrg(organizationId)
+        .listen((list) {
+      _orgSportProfiles = list;
       notifyListeners();
     });
   }
@@ -110,8 +127,8 @@ class PlayerProvider extends ChangeNotifier {
       await _firestoreService.createPlayerDoc(uid, playerDoc.toMap());
 
       for (final profile in sportProfiles) {
-        await _firestoreService.createSportProfile(
-            uid, profile.sport, profile.toMap());
+        await _firestoreService.createSportProfile(uid, profile.sport,
+            profile.copyWith(organizationId: organizationId).toMap());
       }
 
       return true;
@@ -261,6 +278,7 @@ class PlayerProvider extends ChangeNotifier {
   @override
   void dispose() {
     _subscription?.cancel();
+    _sportSub?.cancel();
     _selfSub?.cancel();
     super.dispose();
   }

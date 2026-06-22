@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import '../../../providers/attendance_provider.dart';
 import '../../../providers/payment_provider.dart';
 import '../../../models/attendance_model.dart';
 import '../../../models/sport_profile_model.dart';
+import '../../../models/stats_history_model.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../services/firestore_service.dart';
@@ -24,8 +26,11 @@ class PlayerDashboard extends StatefulWidget {
 
 class _PlayerDashboardState extends State<PlayerDashboard> {
   List<SportProfileModel> _profiles = [];
+  List<StatsHistoryModel> _history = [];
   String? _selectedSport;
+  String? _selectedStatKey; // null = Overall
   StreamSubscription<List<SportProfileModel>>? _profileSub;
+  StreamSubscription<List<StatsHistoryModel>>? _historySub;
 
   @override
   void initState() {
@@ -33,13 +38,15 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uid = context.read<AuthProvider>().userModel?.uid;
       if (uid != null) {
-        _profileSub = FirestoreService()
-            .streamSportProfiles(uid)
-            .listen((profiles) => setState(() {
-                  _profiles = profiles;
-                  _selectedSport ??=
-                      profiles.isNotEmpty ? profiles.first.sport : null;
-                }));
+        final fs = FirestoreService();
+        _profileSub = fs.streamSportProfiles(uid).listen((profiles) =>
+            setState(() {
+              _profiles = profiles;
+              _selectedSport ??=
+                  profiles.isNotEmpty ? profiles.first.sport : null;
+            }));
+        _historySub = fs.streamStatsHistory(uid).listen(
+            (history) => setState(() => _history = history));
       }
     });
   }
@@ -47,6 +54,7 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
   @override
   void dispose() {
     _profileSub?.cancel();
+    _historySub?.cancel();
     super.dispose();
   }
 
@@ -336,6 +344,24 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
               const SizedBox(height: 20),
             ],
 
+            // ── Performance Trend ─────────────────────────────────────────
+            if (_selectedSport != null) ...[
+              () {
+                final sportHistory = (_history
+                      .where((h) => h.sport == _selectedSport)
+                      .toList()
+                    ..sort((a, b) => a.recordedAt.compareTo(b.recordedAt)));
+                if (sportHistory.length < 2) return const SizedBox.shrink();
+                return _PerformanceTrendSection(
+                  history: sportHistory,
+                  statKeys: statKeys,
+                  selectedKey: _selectedStatKey,
+                  onKeyChanged: (k) => setState(() => _selectedStatKey = k),
+                );
+              }(),
+              const SizedBox(height: 20),
+            ],
+
             // ── Attendance Summary ────────────────────────────────────────
             if (total > 0) ...[
               _SectionHeader(title: 'Attendance Summary'),
@@ -419,6 +445,198 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
 }
 
 // ── Section header ────────────────────────────────────────────────────────────
+// ── Performance Trend Section ─────────────────────────────────────────────────
+
+class _PerformanceTrendSection extends StatelessWidget {
+  final List<StatsHistoryModel> history;
+  final List<String> statKeys;
+  final String? selectedKey;
+  final ValueChanged<String?> onKeyChanged;
+
+  const _PerformanceTrendSection({
+    required this.history,
+    required this.statKeys,
+    required this.selectedKey,
+    required this.onKeyChanged,
+  });
+
+  List<FlSpot> _spots() {
+    return history.asMap().entries.map((e) {
+      final value = selectedKey == null
+          ? e.value.overall
+          : (e.value.stats[selectedKey] ?? 0).toDouble();
+      return FlSpot(e.key.toDouble(), value);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final spots = _spots();
+    final dates = history.map((h) => DateFormat('d MMM').format(h.recordedAt)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section title
+        const Text('Performance Trend',
+            style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textDark)),
+        const SizedBox(height: 10),
+
+        // Stat selector chips
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              // Overall chip
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: const Text('Overall'),
+                  selected: selectedKey == null,
+                  onSelected: (_) => onKeyChanged(null),
+                  selectedColor: AppTheme.primaryGreen,
+                  labelStyle: TextStyle(
+                    color: selectedKey == null
+                        ? AppTheme.onPrimary
+                        : AppTheme.textGrey,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              // Per-stat chips
+              ...statKeys.map((k) {
+                final isSelected = selectedKey == k;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text(k[0].toUpperCase() + k.substring(1)),
+                    selected: isSelected,
+                    onSelected: (_) => onKeyChanged(k),
+                    selectedColor: AppTheme.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? AppTheme.onPrimary
+                          : AppTheme.textGrey,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Line chart
+        Container(
+          height: 180,
+          padding: const EdgeInsets.fromLTRB(4, 16, 16, 8),
+          decoration: BoxDecoration(
+            color: AppTheme.cardDark,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.borderDark),
+          ),
+          child: LineChart(
+            LineChartData(
+              minY: 0,
+              maxY: 100,
+              lineBarsData: [
+                LineChartBarData(
+                  spots: spots,
+                  isCurved: true,
+                  color: AppTheme.primaryGreen,
+                  barWidth: 2.5,
+                  dotData: FlDotData(
+                    show: true,
+                    getDotPainter: (_, _, _, _) => FlDotCirclePainter(
+                      radius: 4,
+                      color: AppTheme.primaryGreen,
+                      strokeColor: AppTheme.cardDark,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                  ),
+                ),
+              ],
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipItems: (spots) => spots.map((s) {
+                    final idx = s.x.toInt();
+                    final date = idx < dates.length ? dates[idx] : '';
+                    return LineTooltipItem(
+                      '$date\n${s.y.toStringAsFixed(1)}',
+                      const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600),
+                    );
+                  }).toList(),
+                ),
+              ),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 1,
+                    getTitlesWidget: (v, _) {
+                      final idx = v.toInt();
+                      if (idx < 0 || idx >= dates.length) {
+                        return const SizedBox.shrink();
+                      }
+                      // Only show first, last, and middle to avoid crowding
+                      final show = idx == 0 ||
+                          idx == dates.length - 1 ||
+                          (dates.length > 4 && idx == (dates.length ~/ 2));
+                      if (!show) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(dates[idx],
+                            style: const TextStyle(
+                                color: AppTheme.textGrey, fontSize: 9)),
+                      );
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    interval: 25,
+                    getTitlesWidget: (v, _) => Text(
+                      v.toInt().toString(),
+                      style: const TextStyle(
+                          color: AppTheme.textSubtle, fontSize: 10),
+                    ),
+                  ),
+                ),
+                topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => const FlLine(
+                    color: AppTheme.borderDark, strokeWidth: 0.5),
+              ),
+              borderData: FlBorderData(show: false),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
   final String title;
   const _SectionHeader({required this.title});
