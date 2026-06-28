@@ -21,11 +21,8 @@ import '../../features/coach/screens/mark_attendance_screen.dart';
 import '../../features/coach/screens/qr_generator_screen.dart';
 import '../../features/coach/screens/coach_players_screen.dart';
 import '../../features/coach/screens/drills_screen.dart';
-import '../../features/coach/screens/teams_screen.dart';
-import '../../features/coach/screens/add_edit_team_screen.dart';
-import '../../features/coach/screens/video_analysis_screen.dart';
-import '../../features/coach/screens/video_detail_screen.dart';
-import '../../models/video_analysis_model.dart';
+import '../../features/coach/screens/batches_screen.dart';
+import '../../features/coach/screens/add_edit_batch_screen.dart';
 import '../../features/player/screens/player_shell.dart';
 import '../../features/player/screens/player_dashboard.dart';
 import '../../features/player/screens/player_schedule_screen.dart';
@@ -107,14 +104,11 @@ GoRouter createRouter(AuthProvider authProvider) {
           GoRoute(
               path: '/coach/drills', builder: (_, _) => const DrillsScreen()),
           GoRoute(
-              path: '/coach/video',
-              builder: (_, _) => const VideoAnalysisScreen()),
-          GoRoute(
               path: '/coach/players',
               builder: (_, _) => const CoachPlayersScreen()),
           GoRoute(
-              path: '/coach/teams',
-              builder: (_, _) => const TeamsScreen()),
+              path: '/coach/batches',
+              builder: (_, _) => const BatchesScreen()),
         ],
       ),
 
@@ -183,22 +177,18 @@ GoRouter createRouter(AuthProvider authProvider) {
           builder: (_, state) =>
               QrGeneratorScreen(sessionId: state.pathParameters['sessionId']!)),
       GoRoute(
-          path: '/coach/video/:id',
-          builder: (_, state) =>
-              VideoDetailScreen(video: state.extra as VideoAnalysisModel)),
-      GoRoute(
           path: '/coach/players/:id',
           builder: (_, state) => PlayerDetailScreen(
                 playerId: state.pathParameters['id']!,
                 backRoute: '/coach/players',
               )),
       GoRoute(
-          path: '/coach/teams/add',
-          builder: (_, _) => const AddEditTeamScreen()),
+          path: '/coach/batches/add',
+          builder: (_, _) => const AddEditBatchScreen()),
       GoRoute(
-          path: '/coach/teams/edit/:id',
+          path: '/coach/batches/edit/:id',
           builder: (_, state) =>
-              AddEditTeamScreen(teamId: state.pathParameters['id'])),
+              AddEditBatchScreen(batchId: state.pathParameters['id'])),
 
       // Player
       GoRoute(path: '/player/scan', builder: (_, _) => const QrScannerScreen()),

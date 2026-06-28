@@ -10,12 +10,14 @@ class SessionModel {
   final String notes;
   final String? sport;
   final String? category;
-  final String? teamId;
+  final List<String> batchIds;
+  final List<String> playerIds;
   final String organizationId;
   final String branchId;
   final String createdBy;
   final String createdByName;
   final DateTime createdAt;
+  final int durationMinutes;
   final bool isCompleted;
   final String? highlights;
 
@@ -28,20 +30,24 @@ class SessionModel {
     required this.notes,
     this.sport,
     this.category,
-    this.teamId,
+    this.batchIds = const [],
+    this.playerIds = const [],
     required this.organizationId,
     required this.branchId,
     required this.createdBy,
     required this.createdByName,
     required this.createdAt,
+    this.durationMinutes = 90,
     required this.isCompleted,
     this.highlights,
   });
 
+  DateTime get endTime =>
+      dateTime.add(Duration(minutes: durationMinutes));
+
   bool get isTraining => type == AppConstants.sessionTypeTraining;
   bool get isMatch => type == AppConstants.sessionTypeMatch;
   bool get isUpcoming => dateTime.isAfter(DateTime.now());
-  bool get isTeamSession => teamId != null;
 
   factory SessionModel.fromMap(Map<String, dynamic> map, String id) {
     return SessionModel(
@@ -55,7 +61,14 @@ class SessionModel {
       notes: map['notes'] as String? ?? '',
       sport: map['sport'] as String?,
       category: map['category'] as String?,
-      teamId: map['teamId'] as String?,
+      batchIds: (map['batchIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      playerIds: (map['playerIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       organizationId: map['organizationId'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
       createdBy: map['createdBy'] as String? ?? '',
@@ -63,6 +76,7 @@ class SessionModel {
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+      durationMinutes: map['durationMinutes'] as int? ?? 90,
       isCompleted: map['isCompleted'] as bool? ?? false,
       highlights: map['highlights'] as String?,
     );
@@ -73,11 +87,13 @@ class SessionModel {
       'title': title,
       'type': type,
       'dateTime': Timestamp.fromDate(dateTime),
+      'durationMinutes': durationMinutes,
       'location': location,
       'notes': notes,
       if (sport != null) 'sport': sport,
       if (category != null) 'category': category,
-      if (teamId != null) 'teamId': teamId,
+      'batchIds': batchIds,
+      'playerIds': playerIds,
       'organizationId': organizationId,
       'branchId': branchId,
       'createdBy': createdBy,

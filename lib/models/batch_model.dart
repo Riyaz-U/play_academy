@@ -1,29 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class TeamModel {
+class BatchModel {
   final String id;
   final String name;
   final String sport;
+  final String category;
   final String branchId;
   final String organizationId;
   final String createdBy;
   final DateTime createdAt;
 
-  const TeamModel({
+  const BatchModel({
     required this.id,
     required this.name,
     required this.sport,
+    required this.category,
     required this.branchId,
     required this.organizationId,
     required this.createdBy,
     required this.createdAt,
   });
 
-  factory TeamModel.fromMap(Map<String, dynamic> map, String id) {
-    return TeamModel(
+  factory BatchModel.fromMap(Map<String, dynamic> map, String id) {
+    return BatchModel(
       id: id,
       name: map['name'] as String? ?? '',
       sport: map['sport'] as String? ?? '',
+      category: map['category'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
       organizationId: map['organizationId'] as String? ?? '',
       createdBy: map['createdBy'] as String? ?? '',
@@ -36,6 +39,7 @@ class TeamModel {
   Map<String, dynamic> toMap() => {
         'name': name,
         'sport': sport,
+        'category': category,
         'branchId': branchId,
         'organizationId': organizationId,
         'createdBy': createdBy,

@@ -11,11 +11,9 @@ import '../models/drill_model.dart';
 import '../models/session_model.dart';
 import '../models/attendance_model.dart';
 import '../models/payment_model.dart';
-import '../models/video_analysis_model.dart';
 import '../models/qr_session_model.dart';
 import '../models/sport_profile_model.dart';
-import '../models/team_model.dart';
-import '../models/team_member_model.dart';
+import '../models/batch_model.dart';
 import '../core/constants/app_constants.dart';
 
 class FirestoreService {
@@ -321,68 +319,6 @@ class FirestoreService {
                   playerId: d.reference.parent.parent?.id ?? ''))
               .toList());
 
-  // ── Teams ──────────────────────────────────────────────
-
-  Future<String> createTeam(Map<String, dynamic> data) async {
-    final doc = await _db.collection(AppConstants.teamsCollection).add(data);
-    return doc.id;
-  }
-
-  Future<void> updateTeam(String id, Map<String, dynamic> data) =>
-      _db.collection(AppConstants.teamsCollection).doc(id).update(data);
-
-  Future<void> deleteTeam(String id) =>
-      _db.collection(AppConstants.teamsCollection).doc(id).delete();
-
-  Stream<List<TeamModel>> streamTeamsByBranch(String branchId) =>
-      _db
-          .collection(AppConstants.teamsCollection)
-          .where('branchId', isEqualTo: branchId)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((s) =>
-              s.docs.map((d) => TeamModel.fromMap(d.data(), d.id)).toList());
-
-  Stream<List<TeamModel>> streamTeamsBySport(
-          String branchId, String sport) =>
-      _db
-          .collection(AppConstants.teamsCollection)
-          .where('branchId', isEqualTo: branchId)
-          .where('sport', isEqualTo: sport)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((s) =>
-              s.docs.map((d) => TeamModel.fromMap(d.data(), d.id)).toList());
-
-  // ── Team Members (subcollection of teams) ──────────────
-
-  Future<void> addTeamMember(
-          String teamId, String playerId, Map<String, dynamic> data) =>
-      _db
-          .collection(AppConstants.teamsCollection)
-          .doc(teamId)
-          .collection(AppConstants.teamMembersCollection)
-          .doc(playerId)
-          .set(data);
-
-  Future<void> removeTeamMember(String teamId, String playerId) =>
-      _db
-          .collection(AppConstants.teamsCollection)
-          .doc(teamId)
-          .collection(AppConstants.teamMembersCollection)
-          .doc(playerId)
-          .delete();
-
-  Stream<List<TeamMemberModel>> streamTeamMembers(String teamId) =>
-      _db
-          .collection(AppConstants.teamsCollection)
-          .doc(teamId)
-          .collection(AppConstants.teamMembersCollection)
-          .orderBy('addedAt')
-          .snapshots()
-          .map((s) => s.docs
-              .map((d) => TeamMemberModel.fromMap(d.data()))
-              .toList());
 
   Stream<PlayerModel?> streamPlayerById(String uid) =>
       _db
@@ -533,60 +469,6 @@ class FirestoreService {
               .map((d) => PaymentModel.fromMap(d.data(), d.id))
               .toList());
 
-  // ── Video Analysis ─────────────────────────────────────
-
-  Future<String> createVideoAnalysis(Map<String, dynamic> data) async {
-    final doc =
-        await _db.collection(AppConstants.videoAnalysisCollection).add(data);
-    return doc.id;
-  }
-
-  Future<void> updateVideoAnalysis(String id, Map<String, dynamic> data) =>
-      _db.collection(AppConstants.videoAnalysisCollection).doc(id).update(data);
-
-  Future<void> deleteVideoAnalysis(String id) =>
-      _db.collection(AppConstants.videoAnalysisCollection).doc(id).delete();
-
-  Stream<List<VideoAnalysisModel>> streamVideoAnalysisByBranch(
-          String branchId) =>
-      _db
-          .collection(AppConstants.videoAnalysisCollection)
-          .where('branchId', isEqualTo: branchId)
-          .orderBy('createdAt', descending: true)
-          .snapshots()
-          .map((s) => s.docs
-              .map((d) => VideoAnalysisModel.fromMap(d.data(), d.id))
-              .toList());
-
-  // ── Annotations (subcollection of videoAnalysis) ───────
-
-  Future<String> addAnnotation(
-      String videoId, Map<String, dynamic> data) async {
-    final doc = await _db
-        .collection(AppConstants.videoAnalysisCollection)
-        .doc(videoId)
-        .collection(AppConstants.annotationsCollection)
-        .add(data);
-    return doc.id;
-  }
-
-  Stream<List<VideoAnnotation>> streamAnnotations(String videoId) => _db
-      .collection(AppConstants.videoAnalysisCollection)
-      .doc(videoId)
-      .collection(AppConstants.annotationsCollection)
-      .orderBy('timestamp')
-      .snapshots()
-      .map((s) => s.docs
-          .map((d) => VideoAnnotation.fromMap(d.data(), d.id))
-          .toList());
-
-  Future<void> deleteAnnotation(String videoId, String annotationId) => _db
-      .collection(AppConstants.videoAnalysisCollection)
-      .doc(videoId)
-      .collection(AppConstants.annotationsCollection)
-      .doc(annotationId)
-      .delete();
-
   // ── QR Sessions ────────────────────────────────────────
 
   Future<String> createQrSession(Map<String, dynamic> data) async {
@@ -620,6 +502,35 @@ class FirestoreService {
       .snapshots()
       .map((doc) =>
           doc.exists ? QrSessionModel.fromMap(doc.data()!, doc.id) : null);
+
+  // ── Batches ────────────────────────────────────────────
+
+  Future<String> createBatch(Map<String, dynamic> data) async {
+    final ref =
+        await _db.collection(AppConstants.batchesCollection).add(data);
+    return ref.id;
+  }
+
+  Future<void> updateBatch(String id, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.batchesCollection).doc(id).update(data);
+
+  Future<void> deleteBatch(String id) =>
+      _db.collection(AppConstants.batchesCollection).doc(id).delete();
+
+  Stream<List<BatchModel>> streamBatchesByBranch(String branchId) => _db
+      .collection(AppConstants.batchesCollection)
+      .where('branchId', isEqualTo: branchId)
+      .orderBy('createdAt', descending: false)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => BatchModel.fromMap(d.data(), d.id)).toList());
+
+  Stream<List<BatchModel>> streamBatchesByOrg(String organizationId) => _db
+      .collection(AppConstants.batchesCollection)
+      .where('organizationId', isEqualTo: organizationId)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => BatchModel.fromMap(d.data(), d.id)).toList());
 
   // ── Attendance (single record) ─────────────────────────
 

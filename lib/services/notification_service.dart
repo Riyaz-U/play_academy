@@ -28,6 +28,9 @@ class NotificationService {
 
   bool _initialized = false;
 
+  // Tracks which sport topics this device is currently subscribed to.
+  final Set<String> _subscribedSportTopics = {};
+
   Future<void> initialize(String uid, {bool isPlayer = false}) async {
     if (_initialized) return;
     _initialized = true;
@@ -58,7 +61,8 @@ class NotificationService {
     // Show local notification when app is in foreground
     FirebaseMessaging.onMessage.listen(_showLocalNotification);
 
-    // Subscribe players to the branch-agnostic topic (branch-specific done by Cloud Function)
+    // Subscribe players to the all_players topic for non-session notifications
+    // (payment reminders, announcements). Session notifications use sport topics.
     if (isPlayer) {
       await _messaging.subscribeToTopic(AppConstants.topicAllPlayers);
     }
@@ -73,6 +77,27 @@ class NotificationService {
     _messaging.onTokenRefresh.listen((newToken) {
       FirestoreService().updateFcmToken(uid, newToken);
     });
+  }
+
+  /// Called whenever a player's sport profile list changes.
+  /// Subscribes to new sport topics and unsubscribes from removed ones.
+  /// Topic format: "sport_football", "sport_cricket", etc.
+  Future<void> syncSportTopics(List<String> currentSports) async {
+    final next = currentSports.toSet();
+
+    final toAdd = next.difference(_subscribedSportTopics);
+    final toRemove = _subscribedSportTopics.difference(next);
+
+    for (final sport in toAdd) {
+      await _messaging.subscribeToTopic('sport_$sport');
+    }
+    for (final sport in toRemove) {
+      await _messaging.unsubscribeFromTopic('sport_$sport');
+    }
+
+    _subscribedSportTopics
+      ..removeAll(toRemove)
+      ..addAll(toAdd);
   }
 
   void _showLocalNotification(RemoteMessage message) {

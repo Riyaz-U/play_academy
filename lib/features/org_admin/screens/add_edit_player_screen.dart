@@ -6,6 +6,7 @@ import '../../../providers/player_provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../models/batch_model.dart';
 import '../../../models/player_model.dart';
 import '../../../models/sport_profile_model.dart';
 import '../../../services/firestore_service.dart';
@@ -15,12 +16,14 @@ class _EnrollmentDraft {
   String category;
   String position;
   int jerseyNumber;
+  String? batchId;
 
   _EnrollmentDraft({
     required this.sport,
     required this.category,
     required this.position,
     required this.jerseyNumber,
+    this.batchId,
   });
 
   String get defaultPosition =>
@@ -32,6 +35,7 @@ class _EnrollmentDraft {
         category: p.category,
         position: p.position,
         jerseyNumber: p.jerseyNumber,
+        batchId: p.batchId.isEmpty ? null : p.batchId,
       );
 }
 
@@ -180,6 +184,19 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
       return;
     }
 
+    final age = int.tryParse(_ageCtrl.text) ?? 0;
+    for (final e in _enrollments) {
+      if (!AppConstants.isCategoryValidForAge(e.category, age)) {
+        final max = AppConstants.categoryMaxAge[e.category];
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              'Age $age is too old for ${e.category} (max age $max) in ${e.sport}'),
+          backgroundColor: AppTheme.errorRed,
+        ));
+        return;
+      }
+    }
+
     final provider = context.read<PlayerProvider>();
     final adminUid = context.read<AuthProvider>().userModel!.uid;
     final orgId = context.read<AuthProvider>().userModel!.organizationId;
@@ -222,19 +239,22 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 category: draft.category,
                 position: draft.position,
                 jerseyNumber: draft.jerseyNumber,
+                batchId: draft.batchId ?? '',
                 stats: SportProfileModel.defaultStats(draft.sport),
                 enrolledAt: DateTime.now(),
               ),
             );
           } else if (old.position != draft.position ||
               old.category != draft.category ||
-              old.jerseyNumber != draft.jerseyNumber) {
+              old.jerseyNumber != draft.jerseyNumber ||
+              (draft.batchId ?? '') != old.batchId) {
             await provider.updateSportProfile(
               widget.playerId!,
               old.copyWith(
                 category: draft.category,
                 position: draft.position,
                 jerseyNumber: draft.jerseyNumber,
+                batchId: draft.batchId ?? '',
               ),
             );
           }
@@ -254,6 +274,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                 category: d.category,
                 position: d.position,
                 jerseyNumber: d.jerseyNumber,
+                batchId: d.batchId ?? '',
                 stats: SportProfileModel.defaultStats(d.sport),
                 enrolledAt: DateTime.now(),
               ))
@@ -581,6 +602,8 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                       .where((e) => e != draft)
                       .map((e) => e.sport)
                       .toSet(),
+                  branchId: _branchId,
+                  playerAge: int.tryParse(_ageCtrl.text) ?? 0,
                   onChanged: () => setState(() {}),
                   onRemove: () =>
                       setState(() => _enrollments.removeAt(i)),
@@ -647,6 +670,8 @@ class _EnrollmentCard extends StatefulWidget {
   final int index;
   final bool canRemove;
   final Set<String> usedSports;
+  final String? branchId;
+  final int playerAge;
   final VoidCallback onChanged;
   final VoidCallback onRemove;
 
@@ -656,6 +681,8 @@ class _EnrollmentCard extends StatefulWidget {
     required this.index,
     required this.canRemove,
     required this.usedSports,
+    this.branchId,
+    required this.playerAge,
     required this.onChanged,
     required this.onRemove,
   });
@@ -768,26 +795,42 @@ class _EnrollmentCardState extends State<_EnrollmentCard> {
           Row(
             children: [
               Expanded(
-                child: DropdownButtonFormField<String>(
-                  key: ValueKey(
-                      'cat_${draft.category}_${widget.index}'),
-                  initialValue: draft.category,
-                  decoration: const InputDecoration(
-                    labelText: 'Category',
-                    isDense: true,
-                    contentPadding:
-                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  ),
-                  items: AppConstants.categories
-                      .map((c) =>
-                          DropdownMenuItem(value: c, child: Text(c)))
-                      .toList(),
-                  onChanged: (v) {
-                    if (v == null) return;
-                    draft.category = v;
-                    widget.onChanged();
-                  },
-                ),
+                child: Builder(builder: (context) {
+                  final age = widget.playerAge;
+                  final validCategories = AppConstants.categories
+                      .where((c) =>
+                          AppConstants.isCategoryValidForAge(c, age))
+                      .toList();
+                  // Auto-correct if current selection is no longer valid
+                  if (age > 0 &&
+                      !AppConstants.isCategoryValidForAge(
+                          draft.category, age)) {
+                    draft.category =
+                        validCategories.isNotEmpty
+                            ? validCategories.first
+                            : AppConstants.categories.last;
+                  }
+                  return DropdownButtonFormField<String>(
+                    key: ValueKey(
+                        'cat_${draft.category}_${widget.index}_$age'),
+                    initialValue: draft.category,
+                    decoration: const InputDecoration(
+                      labelText: 'Category',
+                      isDense: true,
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    ),
+                    items: (age > 0 ? validCategories : AppConstants.categories)
+                        .map((c) =>
+                            DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) {
+                      if (v == null) return;
+                      draft.category = v;
+                      widget.onChanged();
+                    },
+                  );
+                }),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -835,6 +878,45 @@ class _EnrollmentCardState extends State<_EnrollmentCard> {
                   (v == null || int.tryParse(v) == null) ? 'Invalid' : null,
             ),
           ),
+          const SizedBox(height: 10),
+          if (widget.branchId != null)
+            StreamBuilder<List<BatchModel>>(
+              stream: FirestoreService()
+                  .streamBatchesByBranch(widget.branchId!)
+                  .map((list) =>
+                      list.where((b) => b.sport == draft.sport).toList()),
+              builder: (context, snapshot) {
+                final batches = snapshot.data ?? [];
+                if (batches.isEmpty) return const SizedBox.shrink();
+                // Clear batchId if it no longer belongs to this sport
+                if (draft.batchId != null &&
+                    !batches.any((b) => b.id == draft.batchId)) {
+                  draft.batchId = null;
+                }
+                return DropdownButtonFormField<String?>(
+                  key: ValueKey('batch_${draft.sport}_${widget.branchId}'),
+                  initialValue: draft.batchId,
+                  decoration: const InputDecoration(
+                    labelText: 'Batch (optional)',
+                    isDense: true,
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  ),
+                  hint: const Text('No batch'),
+                  items: [
+                    const DropdownMenuItem(
+                        value: null, child: Text('No batch')),
+                    ...batches.map((b) => DropdownMenuItem(
+                        value: b.id,
+                        child: Text('${b.name} · ${b.category}'))),
+                  ],
+                  onChanged: (v) {
+                    draft.batchId = v;
+                    widget.onChanged();
+                  },
+                );
+              },
+            ),
         ],
       ),
     );

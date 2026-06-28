@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../../providers/player_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../widgets/session_card.dart';
@@ -21,13 +22,27 @@ class _PlayerScheduleScreenState extends State<PlayerScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     final allSessions = context.watch<SessionProvider>().sessions;
+    final playerProvider = context.watch<PlayerProvider>();
+    final myBatchIds = playerProvider.selfSportProfiles
+        .map((p) => p.batchId)
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    final myUid = playerProvider.self?.uid ?? '';
+
+    // Only show sessions that target this player's batch(es) or include them directly.
+    // If a session has no batchIds and no playerIds it's an open/legacy session — show it too.
+    final mySessions = allSessions.where((s) {
+      if (s.batchIds.isEmpty && s.playerIds.isEmpty) return true;
+      if (s.playerIds.contains(myUid)) return true;
+      return s.batchIds.any((id) => myBatchIds.contains(id));
+    }).toList();
 
     final filtered = switch (_filter) {
       _Filter.upcoming =>
-        allSessions.where((s) => s.isUpcoming && !s.isCompleted).toList(),
+        mySessions.where((s) => s.isUpcoming && !s.isCompleted).toList(),
       _Filter.past =>
-        allSessions.where((s) => !s.isUpcoming || s.isCompleted).toList(),
-      _Filter.all => allSessions,
+        mySessions.where((s) => !s.isUpcoming || s.isCompleted).toList(),
+      _Filter.all => mySessions,
     };
 
     // Sort: upcoming → ascending, past → descending

@@ -11,12 +11,9 @@ class AppConstants {
   static const String statsHistoryCollection = 'statsHistory';
   static const String badgesCollection = 'badges';
   static const String drillsCollection = 'drills';
-  static const String videoAnalysisCollection = 'videoAnalysis';
-  static const String annotationsCollection = 'annotations';
   static const String qrSessionsCollection = 'qrSessions';
-  static const String teamsCollection = 'teams';
   static const String sportProfilesCollection = 'sportProfiles';
-  static const String teamMembersCollection = 'members';
+  static const String batchesCollection = 'batches';
 
   // ── Roles ─────────────────────────────────────────────
   static const String roleOrgAdmin = 'org_admin';
@@ -81,6 +78,22 @@ class AppConstants {
     'U21',
     'Senior',
   ];
+
+  // Max age (inclusive) per category; null = no upper limit (Senior).
+  static const Map<String, int?> categoryMaxAge = {
+    'U13': 13,
+    'U15': 15,
+    'U17': 17,
+    'U18': 18,
+    'U19': 19,
+    'U21': 21,
+    'Senior': null,
+  };
+
+  static bool isCategoryValidForAge(String category, int age) {
+    final max = categoryMaxAge[category];
+    return max == null || age <= max;
+  }
 
   // ── Razorpay ─────────────────────────────────────────
   // Replace with your actual Razorpay Key ID from the dashboard

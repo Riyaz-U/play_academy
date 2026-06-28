@@ -12,10 +12,12 @@ class SportProfileModel {
   final DateTime enrolledAt;
 
   final String organizationId;
+  final String batchId;
 
   const SportProfileModel({
     this.playerId = '',
     this.organizationId = '',
+    this.batchId = '',
     required this.sport,
     required this.branchId,
     required this.category,
@@ -41,6 +43,7 @@ class SportProfileModel {
     return SportProfileModel(
       playerId: playerId,
       organizationId: map['organizationId'] as String? ?? '',
+      batchId: map['batchId'] as String? ?? '',
       sport: map['sport'] as String? ?? '',
       branchId: map['branchId'] as String? ?? '',
       category: map['category'] as String? ?? 'Senior',
@@ -55,6 +58,7 @@ class SportProfileModel {
 
   Map<String, dynamic> toMap() => {
         'organizationId': organizationId,
+        'batchId': batchId,
         'sport': sport,
         'branchId': branchId,
         'category': category,
@@ -67,6 +71,7 @@ class SportProfileModel {
   SportProfileModel copyWith({
     String? playerId,
     String? organizationId,
+    String? batchId,
     String? sport,
     String? branchId,
     String? category,
@@ -78,6 +83,7 @@ class SportProfileModel {
     return SportProfileModel(
       playerId: playerId ?? this.playerId,
       organizationId: organizationId ?? this.organizationId,
+      batchId: batchId ?? this.batchId,
       sport: sport ?? this.sport,
       branchId: branchId ?? this.branchId,
       category: category ?? this.category,

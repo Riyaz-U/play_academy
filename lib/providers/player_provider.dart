@@ -16,15 +16,18 @@ class PlayerProvider extends ChangeNotifier {
 
   List<PlayerModel> _players = [];
   List<SportProfileModel> _orgSportProfiles = [];
+  List<SportProfileModel> _selfSportProfiles = [];
   PlayerModel? _self;
   bool _isLoading = false;
   String? _error;
   StreamSubscription<List<PlayerModel>>? _subscription;
   StreamSubscription<List<SportProfileModel>>? _sportSub;
+  StreamSubscription<List<SportProfileModel>>? _selfSportSub;
   StreamSubscription<PlayerModel?>? _selfSub;
 
   List<PlayerModel> get players => _players;
   PlayerModel? get self => _self;
+  List<SportProfileModel> get selfSportProfiles => _selfSportProfiles;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -36,10 +39,24 @@ class PlayerProvider extends ChangeNotifier {
     return map;
   }
 
+  Set<String> playerIdsInBatches(List<String> batchIds) {
+    if (batchIds.isEmpty) return {};
+    return _orgSportProfiles
+        .where((p) => batchIds.contains(p.batchId) && p.playerId.isNotEmpty)
+        .map((p) => p.playerId)
+        .toSet();
+  }
+
   void listenToSelf(String uid) {
     _selfSub?.cancel();
     _selfSub = _firestoreService.streamPlayerById(uid).listen((player) {
       _self = player;
+      notifyListeners();
+    });
+    _selfSportSub?.cancel();
+    _selfSportSub =
+        _firestoreService.streamSportProfiles(uid).listen((profiles) {
+      _selfSportProfiles = profiles;
       notifyListeners();
     });
   }
@@ -280,6 +297,7 @@ class PlayerProvider extends ChangeNotifier {
     _subscription?.cancel();
     _sportSub?.cancel();
     _selfSub?.cancel();
+    _selfSportSub?.cancel();
     super.dispose();
   }
 }

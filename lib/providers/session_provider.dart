@@ -38,11 +38,33 @@ class SessionProvider extends ChangeNotifier {
     );
   }
 
-  List<SessionModel> getByTeam(String teamId) =>
-      _sessions.where((s) => s.teamId == teamId).toList();
-
   List<SessionModel> getBySport(String sport) =>
       _sessions.where((s) => s.sport == sport).toList();
+
+  List<SessionModel> getByBatch(String batchId) =>
+      _sessions.where((s) => s.batchIds.contains(batchId)).toList();
+
+  // Returns the conflicting session title if the new session overlaps an
+  // existing session on any shared batch, null if no conflict.
+  String? _findBatchConflict({
+    required DateTime start,
+    required int durationMinutes,
+    required List<String> batchIds,
+    String? excludeId,
+  }) {
+    if (batchIds.isEmpty) return null;
+    final end = start.add(Duration(minutes: durationMinutes));
+    for (final s in _sessions) {
+      if (s.id == excludeId || s.isCompleted) continue;
+      final sharedBatch = s.batchIds.any((id) => batchIds.contains(id));
+      if (!sharedBatch) continue;
+      final sEnd = s.endTime;
+      if (start.isBefore(sEnd) && end.isAfter(s.dateTime)) {
+        return s.title;
+      }
+    }
+    return null;
+  }
 
   Future<bool> createSession({
     required String title,
@@ -52,7 +74,9 @@ class SessionProvider extends ChangeNotifier {
     required String notes,
     String? sport,
     String? category,
-    String? teamId,
+    List<String> batchIds = const [],
+    List<String> playerIds = const [],
+    int durationMinutes = 90,
     required String organizationId,
     required String branchId,
     required String coachUid,
@@ -62,16 +86,27 @@ class SessionProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      final conflict = _findBatchConflict(
+        start: dateTime,
+        durationMinutes: durationMinutes,
+        batchIds: batchIds,
+      );
+      if (conflict != null) {
+        _error = 'Batch already has a session "$conflict" overlapping this time slot.';
+        return false;
+      }
       final session = SessionModel(
         id: '',
         title: title,
         type: type,
         dateTime: dateTime,
+        durationMinutes: durationMinutes,
         location: location,
         notes: notes,
         sport: sport,
         category: category,
-        teamId: teamId,
+        batchIds: batchIds,
+        playerIds: playerIds,
         organizationId: organizationId,
         branchId: branchId,
         createdBy: coachUid,

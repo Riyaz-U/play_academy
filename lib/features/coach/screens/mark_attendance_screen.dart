@@ -128,9 +128,20 @@ class _MarkAttendanceScreenState extends State<MarkAttendanceScreen> {
     final session =
         context.watch<SessionProvider>().getById(widget.sessionId);
     final allPlayers = context.watch<PlayerProvider>().players;
+    final playerProvider = context.watch<PlayerProvider>();
     final attendanceProvider = context.watch<AttendanceProvider>();
 
-    final players = allPlayers;
+    List<PlayerModel> players;
+    if (session != null &&
+        (session.batchIds.isNotEmpty || session.playerIds.isNotEmpty)) {
+      final ids = {
+        ...session.playerIds,
+        ...playerProvider.playerIdsInBatches(session.batchIds),
+      };
+      players = allPlayers.where((p) => ids.contains(p.uid)).toList();
+    } else {
+      players = allPlayers;
+    }
 
     _initAttendance(attendanceProvider, players);
 

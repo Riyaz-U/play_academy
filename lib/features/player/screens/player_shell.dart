@@ -6,6 +6,7 @@ import '../../../providers/session_provider.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/payment_provider.dart';
 import '../../../providers/player_provider.dart';
+import '../../../services/notification_service.dart';
 
 class PlayerShell extends StatefulWidget {
   final Widget child;
@@ -26,8 +27,21 @@ class _PlayerShellState extends State<PlayerShell> {
       context.read<SessionProvider>().listenToSessions(user.branchId ?? '');
       context.read<AttendanceProvider>().listenToPlayerAttendance(user.uid);
       context.read<PaymentProvider>().listenToPlayerPayments(user.uid);
+      // listenToSelf also starts the selfSportProfiles stream
       context.read<PlayerProvider>().listenToSelf(user.uid);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Sync FCM sport topics whenever selfSportProfiles changes.
+    final sports = context
+        .watch<PlayerProvider>()
+        .selfSportProfiles
+        .map((p) => p.sport)
+        .toList();
+    NotificationService().syncSportTopics(sports);
   }
 
   int _selectedIndex(BuildContext context) {
