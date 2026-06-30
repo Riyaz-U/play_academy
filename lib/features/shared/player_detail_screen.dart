@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -143,7 +144,7 @@ class _PlayerDetailScreenState extends State<PlayerDetailScreen>
                 fs: _fs,
                 canEdit: canEdit,
                 sport: _selectedSport,
-                currentStats: profile?.stats),
+                profiles: _profiles),
             _BadgesTab(player: player, fs: _fs, canEdit: canEdit),
             _InfoTab(player: player),
           ],
@@ -537,14 +538,14 @@ class _HistoryTab extends StatelessWidget {
   final FirestoreService fs;
   final bool canEdit;
   final String? sport;
-  final Map<String, int>? currentStats;
+  final List<SportProfileModel> profiles;
 
   const _HistoryTab({
     required this.player,
     required this.fs,
     required this.canEdit,
     required this.sport,
-    required this.currentStats,
+    required this.profiles,
   });
 
   @override
@@ -606,9 +607,8 @@ class _HistoryTab extends StatelessWidget {
       builder: (_) => _AddHistorySheet(
         player: player,
         fs: fs,
-        sport: sport!,
-        initialStats: currentStats ??
-            SportProfileModel.defaultStats(sport!),
+        profiles: profiles,
+        initialSport: sport!,
       ),
     );
   }
@@ -742,14 +742,14 @@ class _MiniStat extends StatelessWidget {
 class _AddHistorySheet extends StatefulWidget {
   final PlayerModel player;
   final FirestoreService fs;
-  final String sport;
-  final Map<String, int> initialStats;
+  final List<SportProfileModel> profiles;
+  final String initialSport;
 
   const _AddHistorySheet({
     required this.player,
     required this.fs,
-    required this.sport,
-    required this.initialStats,
+    required this.profiles,
+    required this.initialSport,
   });
 
   @override
@@ -757,6 +757,7 @@ class _AddHistorySheet extends StatefulWidget {
 }
 
 class _AddHistorySheetState extends State<_AddHistorySheet> {
+  late String _selectedSport;
   late Map<String, int> _stats;
   final _noteCtrl = TextEditingController();
   bool _saving = false;
@@ -764,8 +765,22 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
   @override
   void initState() {
     super.initState();
-    _stats = Map.from(widget.initialStats);
+    _selectedSport = widget.initialSport;
+    _stats = _loadStats(widget.initialSport);
   }
+
+  Map<String, int> _loadStats(String sport) {
+    final profile =
+        widget.profiles.where((p) => p.sport == sport).firstOrNull;
+    final existing = profile?.stats ?? {};
+    return Map.from(
+        existing.isEmpty ? SportProfileModel.defaultStats(sport) : existing);
+  }
+
+  void _switchSport(String sport) => setState(() {
+        _selectedSport = sport;
+        _stats = _loadStats(sport);
+      });
 
   @override
   void dispose() {
@@ -775,7 +790,7 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final statKeys = AppConstants.sportStats[widget.sport] ?? [];
+    final statKeys = AppConstants.sportStats[_selectedSport] ?? [];
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(
           20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
@@ -793,36 +808,65 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              const Text('Add Stats Entry',
-                  style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textDark)),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  widget.sport[0].toUpperCase() +
-                      widget.sport.substring(1),
-                  style: const TextStyle(
-                      fontSize: 12, color: AppTheme.primaryGreen),
-                ),
+          const Text('Add Stats Entry',
+              style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textDark)),
+          // Sport selector — only shown when player has multiple enrollments
+          if (widget.profiles.length > 1) ...[
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: widget.profiles.map((p) {
+                  final sel = p.sport == _selectedSport;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(
+                          p.sport[0].toUpperCase() + p.sport.substring(1)),
+                      selected: sel,
+                      onSelected: (_) => _switchSport(p.sport),
+                      selectedColor:
+                          AppTheme.primaryGreen.withValues(alpha: 0.15),
+                      labelStyle: TextStyle(
+                        fontSize: 12,
+                        color: sel
+                            ? AppTheme.primaryGreen
+                            : AppTheme.textGrey,
+                        fontWeight: sel
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-            ],
-          ),
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _selectedSport[0].toUpperCase() +
+                    _selectedSport.substring(1),
+                style: const TextStyle(
+                    fontSize: 12, color: AppTheme.primaryGreen),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           ...statKeys.map((k) => _SliderRow(
+                key: ValueKey('$_selectedSport-$k'),
                 label: k[0].toUpperCase() + k.substring(1),
                 value: _stats[k] ?? 50,
-                onChanged: (v) =>
-                    setState(() => _stats[k] = v),
+                onChanged: (v) => setState(() => _stats[k] = v),
               )),
           const SizedBox(height: 8),
           TextField(
@@ -853,55 +897,105 @@ class _AddHistorySheetState extends State<_AddHistorySheet> {
     final entry = StatsHistoryModel(
       id: '',
       playerId: widget.player.uid,
-      sport: widget.sport,
+      sport: _selectedSport,
       stats: Map.from(_stats),
       note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
       recordedAt: DateTime.now(),
     );
     await widget.fs.addStatsHistory(widget.player.uid, entry.toMap());
-    // Also update the sport profile's current stats
-    await widget.fs
-        .updateSportProfile(widget.player.uid, widget.sport, {'stats': _stats});
+    await widget.fs.updateSportProfile(
+        widget.player.uid, _selectedSport, {'stats': _stats});
     if (mounted) Navigator.pop(context);
   }
 }
 
-class _SliderRow extends StatelessWidget {
+class _SliderRow extends StatefulWidget {
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
-  const _SliderRow(
-      {required this.label, required this.value, required this.onChanged});
+
+  const _SliderRow({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  State<_SliderRow> createState() => _SliderRowState();
+}
+
+class _SliderRowState extends State<_SliderRow> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: '${widget.value}');
+  }
+
+  @override
+  void didUpdateWidget(covariant _SliderRow old) {
+    super.didUpdateWidget(old);
+    if (old.value != widget.value) {
+      // Only overwrite the field if it doesn't already represent the new value
+      // (avoids stomping mid-type when the text and value are already in sync)
+      if (int.tryParse(_ctrl.text) != widget.value) {
+        _ctrl.text = '${widget.value}';
+        _ctrl.selection =
+            TextSelection.collapsed(offset: _ctrl.text.length);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           SizedBox(
             width: 90,
-            child: Text(label,
+            child: Text(widget.label,
                 style: const TextStyle(
                     fontSize: 13, color: AppTheme.textDark)),
           ),
           Expanded(
             child: Slider(
-              value: value.toDouble(),
+              value: widget.value.toDouble(),
               min: 0,
               max: 100,
               divisions: 100,
               activeColor: AppTheme.primaryGreen,
-              onChanged: (v) => onChanged(v.toInt()),
+              onChanged: (v) => widget.onChanged(v.toInt()),
             ),
           ),
           SizedBox(
-            width: 32,
-            child: Text('$value',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryGreen)),
+            width: 48,
+            child: TextField(
+              controller: _ctrl,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+              decoration: const InputDecoration(
+                isDense: true,
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              ),
+              onChanged: (v) {
+                final n = int.tryParse(v);
+                if (n != null) widget.onChanged(n.clamp(0, 100));
+              },
+            ),
           ),
         ],
       ),

@@ -44,8 +44,8 @@ class SessionProvider extends ChangeNotifier {
   List<SessionModel> getByBatch(String batchId) =>
       _sessions.where((s) => s.batchIds.contains(batchId)).toList();
 
-  // Returns the conflicting session title if the new session overlaps an
-  // existing session on any shared batch, null if no conflict.
+  // Returns a conflict description if the new session time overlaps an existing
+  // session that shares at least one batch ID. Returns null if no conflict.
   String? _findBatchConflict({
     required DateTime start,
     required int durationMinutes,
@@ -53,13 +53,16 @@ class SessionProvider extends ChangeNotifier {
     String? excludeId,
   }) {
     if (batchIds.isEmpty) return null;
+    final newBatchIds = batchIds.toSet();
     final end = start.add(Duration(minutes: durationMinutes));
     for (final s in _sessions) {
-      if (s.id == excludeId || s.isCompleted) continue;
-      final sharedBatch = s.batchIds.any((id) => batchIds.contains(id));
-      if (!sharedBatch) continue;
-      final sEnd = s.endTime;
-      if (start.isBefore(sEnd) && end.isAfter(s.dateTime)) {
+      if (s.id == excludeId || s.isCompleted || s.batchIds.isEmpty) continue;
+      if (s.endTime.isBefore(DateTime.now())) continue; // skip unfinished-but-past sessions
+      // Find the specific batch IDs shared between this session and the new one
+      final conflicting = s.batchIds.where(newBatchIds.contains).toList();
+      if (conflicting.isEmpty) continue;
+      // Check time overlap: [start, end) overlaps [s.dateTime, s.endTime)
+      if (start.isBefore(s.endTime) && end.isAfter(s.dateTime)) {
         return s.title;
       }
     }
