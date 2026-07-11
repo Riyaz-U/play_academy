@@ -21,14 +21,17 @@ class _CoachShellState extends State<CoachShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final branchId =
-          context.read<AuthProvider>().userModel?.branchId ?? '';
+      final auth = context.read<AuthProvider>();
+      final branchId = auth.userModel?.branchId ?? '';
+      final coachUid = auth.userModel?.uid ?? '';
       if (branchId.isEmpty) return;
       context.read<PlayerProvider>().listenByBranch(branchId);
       context.read<SessionProvider>().listenToSessions(branchId);
       context.read<SessionProvider>().listenToUpcoming(branchId);
       context.read<DrillProvider>().listenByBranch(branchId);
-      context.read<BatchProvider>().listenByBranch(branchId);
+      if (coachUid.isNotEmpty) {
+        context.read<BatchProvider>().listenByCoach(coachUid);
+      }
       context.read<DashboardProvider>().load(branchId);
     });
   }

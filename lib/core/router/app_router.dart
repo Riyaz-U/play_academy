@@ -22,7 +22,8 @@ import '../../features/coach/screens/qr_generator_screen.dart';
 import '../../features/coach/screens/coach_players_screen.dart';
 import '../../features/coach/screens/drills_screen.dart';
 import '../../features/coach/screens/batches_screen.dart';
-import '../../features/coach/screens/add_edit_batch_screen.dart';
+import '../../features/org_admin/screens/admin_batches_screen.dart';
+import '../../features/org_admin/screens/add_edit_batch_screen.dart';
 import '../../features/player/screens/player_shell.dart';
 import '../../features/player/screens/player_dashboard.dart';
 import '../../features/player/screens/player_schedule_screen.dart';
@@ -89,6 +90,9 @@ GoRouter createRouter(AuthProvider authProvider) {
               path: '/org/players', builder: (_, _) => const OrgPlayersScreen()),
           GoRoute(
               path: '/org/coaches', builder: (_, _) => const CoachesScreen()),
+          GoRoute(
+              path: '/org/batches',
+              builder: (_, _) => const AdminBatchesScreen()),
         ],
       ),
 
@@ -163,6 +167,13 @@ GoRouter createRouter(AuthProvider authProvider) {
           path: '/org/coaches/edit/:id',
           builder: (_, state) =>
               AddEditCoachScreen(coachId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/org/batches/add',
+          builder: (_, _) => const OrgAdminAddEditBatchScreen()),
+      GoRoute(
+          path: '/org/batches/edit/:id',
+          builder: (_, state) => OrgAdminAddEditBatchScreen(
+              batchId: state.pathParameters['id'])),
 
       // Coach
       GoRoute(
@@ -182,14 +193,6 @@ GoRouter createRouter(AuthProvider authProvider) {
                 playerId: state.pathParameters['id']!,
                 backRoute: '/coach/players',
               )),
-      GoRoute(
-          path: '/coach/batches/add',
-          builder: (_, _) => const AddEditBatchScreen()),
-      GoRoute(
-          path: '/coach/batches/edit/:id',
-          builder: (_, state) =>
-              AddEditBatchScreen(batchId: state.pathParameters['id'])),
-
       // Player
       GoRoute(path: '/player/scan', builder: (_, _) => const QrScannerScreen()),
     ],

@@ -532,6 +532,13 @@ class FirestoreService {
       .map((s) =>
           s.docs.map((d) => BatchModel.fromMap(d.data(), d.id)).toList());
 
+  Stream<List<BatchModel>> streamBatchesByCoach(String coachUid) => _db
+      .collection(AppConstants.batchesCollection)
+      .where('coachIds', arrayContains: coachUid)
+      .snapshots()
+      .map((s) =>
+          s.docs.map((d) => BatchModel.fromMap(d.data(), d.id)).toList());
+
   // ── Attendance (single record) ─────────────────────────
 
   /// Saves or overwrites a single attendance record (used for QR check-in).

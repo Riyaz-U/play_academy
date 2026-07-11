@@ -8,6 +8,7 @@ class BatchModel {
   final String branchId;
   final String organizationId;
   final String createdBy;
+  final List<String> coachIds;
   final DateTime createdAt;
 
   const BatchModel({
@@ -18,6 +19,7 @@ class BatchModel {
     required this.branchId,
     required this.organizationId,
     required this.createdBy,
+    this.coachIds = const [],
     required this.createdAt,
   });
 
@@ -30,6 +32,10 @@ class BatchModel {
       branchId: map['branchId'] as String? ?? '',
       organizationId: map['organizationId'] as String? ?? '',
       createdBy: map['createdBy'] as String? ?? '',
+      coachIds: (map['coachIds'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       createdAt: map['createdAt'] != null
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
@@ -43,6 +49,7 @@ class BatchModel {
         'branchId': branchId,
         'organizationId': organizationId,
         'createdBy': createdBy,
+        'coachIds': coachIds,
         'createdAt': Timestamp.fromDate(createdAt),
       };
 }

@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../models/batch_model.dart';
 import '../../../models/player_model.dart';
 import '../../../models/sport_profile_model.dart';
 import '../../../providers/batch_provider.dart';
+import '../../../providers/branch_provider.dart';
+import '../../../providers/coach_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../services/firestore_service.dart';
 
-class BatchesScreen extends StatelessWidget {
-  const BatchesScreen({super.key});
+class AdminBatchesScreen extends StatelessWidget {
+  const AdminBatchesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final batches = context.watch<BatchProvider>().batches;
+    final branches = context.watch<BranchProvider>().branches;
 
-    final Map<String, List<BatchModel>> grouped = {};
+    // Group by branchId, then by sport
+    final Map<String, Map<String, List<BatchModel>>> grouped = {};
     for (final b in batches) {
-      grouped.putIfAbsent(b.sport, () => []).add(b);
+      grouped.putIfAbsent(b.branchId, () => {}).putIfAbsent(b.sport, () => []).add(b);
     }
+
+    String branchName(String id) =>
+        branches.firstWhere((b) => b.id == id, orElse: () => branches.first).name;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Batches')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/org/batches/add'),
+        child: const Icon(Icons.add),
+      ),
       body: batches.isEmpty
           ? Center(
               child: Column(
@@ -30,10 +42,10 @@ class BatchesScreen extends StatelessWidget {
                       size: 64,
                       color: Theme.of(context).colorScheme.outline),
                   const SizedBox(height: 12),
-                  Text('No batches assigned',
+                  Text('No batches yet',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 4),
-                  Text('Contact your admin to be assigned to a batch',
+                  Text('Tap + to create your first batch',
                       style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
@@ -41,10 +53,22 @@ class BatchesScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.only(bottom: 88),
               children: [
-                for (final sport in grouped.keys) ...[
-                  _SportHeader(sport: sport),
-                  for (final batch in grouped[sport]!)
-                    _BatchTile(batch: batch),
+                for (final branchId in grouped.keys) ...[
+                  if (grouped.length > 1)
+                    _SectionHeader(
+                      label: branches.any((b) => b.id == branchId)
+                          ? branchName(branchId)
+                          : branchId,
+                      isTop: true,
+                    ),
+                  for (final sport in grouped[branchId]!.keys) ...[
+                    _SectionHeader(
+                      label: sport[0].toUpperCase() + sport.substring(1),
+                      isTop: false,
+                    ),
+                    for (final batch in grouped[branchId]![sport]!)
+                      _AdminBatchTile(batch: batch),
+                  ],
                 ],
               ],
             ),
@@ -52,63 +76,138 @@ class BatchesScreen extends StatelessWidget {
   }
 }
 
-class _SportHeader extends StatelessWidget {
-  final String sport;
-  const _SportHeader({required this.sport});
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final bool isTop;
+  const _SectionHeader({required this.label, required this.isTop});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: EdgeInsets.fromLTRB(16, isTop ? 16 : 8, 16, 4),
       child: Text(
-        sport[0].toUpperCase() + sport.substring(1),
-        style: Theme.of(context)
-            .textTheme
-            .labelLarge
-            ?.copyWith(color: Theme.of(context).colorScheme.primary),
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: isTop
+                  ? Theme.of(context).colorScheme.secondary
+                  : Theme.of(context).colorScheme.primary,
+            ),
       ),
     );
   }
 }
 
-class _BatchTile extends StatelessWidget {
+class _AdminBatchTile extends StatelessWidget {
   final BatchModel batch;
-  const _BatchTile({required this.batch});
+  const _AdminBatchTile({required this.batch});
 
   @override
   Widget build(BuildContext context) {
+    final coaches = context.watch<CoachProvider>().coaches;
     final players = context.watch<PlayerProvider>().players;
 
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        child: Text(
-          batch.name.isNotEmpty ? batch.name[0].toUpperCase() : 'B',
-          style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimaryContainer),
+    final assignedCoaches =
+        coaches.where((c) => batch.coachIds.contains(c.uid)).toList();
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Text(
+                batch.name.isNotEmpty ? batch.name[0].toUpperCase() : 'B',
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(batch.name,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(batch.category,
+                      style: Theme.of(context).textTheme.bodySmall),
+                  if (assignedCoaches.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Wrap(
+                        spacing: 4,
+                        children: assignedCoaches
+                            .map((c) => Chip(
+                                  label: Text(c.name,
+                                      style: const TextStyle(fontSize: 11)),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                  avatar: const Icon(Icons.sports, size: 14),
+                                ))
+                            .toList(),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text('No coach assigned',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error)),
+                    ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.people_outline),
+              tooltip: 'Manage players',
+              onPressed: () => _showMembersSheet(context, players),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit',
+              onPressed: () => context.push('/org/batches/edit/${batch.id}'),
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline,
+                  color: Theme.of(context).colorScheme.error),
+              tooltip: 'Delete',
+              onPressed: () => _confirmDelete(context),
+            ),
+          ],
         ),
-      ),
-      title: Text(batch.name),
-      subtitle: Text(batch.category),
-      onTap: () => _showMembersSheet(context, players),
-      trailing: IconButton(
-        icon: const Icon(Icons.people_outline),
-        tooltip: 'Manage players',
-        onPressed: () => _showMembersSheet(context, players),
       ),
     );
   }
 
-  void _showMembersSheet(
-      BuildContext context, List<PlayerModel> branchPlayers) {
+  void _showMembersSheet(BuildContext context, List<PlayerModel> players) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _BatchMembersSheet(
-        batch: batch,
-        branchPlayers: branchPlayers,
+      builder: (_) => _BatchMembersSheet(batch: batch, branchPlayers: players),
+    );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Delete batch?'),
+        content: Text('Delete "${batch.name}"? This cannot be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(dialogCtx, true),
+              child: const Text('Delete')),
+        ],
       ),
     );
+    if (confirmed == true && context.mounted) {
+      await context.read<BatchProvider>().deleteBatch(batch.id);
+    }
   }
 }
 
@@ -131,7 +230,6 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
   final Set<String> _saving = {};
   String _query = '';
 
-  // Returns a map of playerId → SportProfileModel for this batch's sport
   Stream<Map<String, SportProfileModel>> _profilesStream() =>
       _service
           .streamSportProfilesByBranch(
@@ -162,12 +260,12 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
       expand: false,
       initialChildSize: 0.75,
       maxChildSize: 0.95,
-      builder: (_, scrollCtrl) => StreamBuilder<Map<String, SportProfileModel>>(
+      builder: (_, scrollCtrl) =>
+          StreamBuilder<Map<String, SportProfileModel>>(
         stream: _profilesStream(),
         builder: (context, snapshot) {
           final profiles = snapshot.data ?? {};
 
-          // Only show players who have a sport profile for this sport
           final eligible = widget.branchPlayers
               .where((p) => profiles.containsKey(p.uid))
               .where((p) =>
@@ -204,8 +302,7 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
                               '${widget.batch.category} · ${widget.batch.sport[0].toUpperCase()}${widget.batch.sport.substring(1)} · $memberCount player${memberCount == 1 ? '' : 's'}',
                               style: TextStyle(
                                   fontSize: 12,
-                                  color:
-                                      Theme.of(context).colorScheme.outline)),
+                                  color: Theme.of(context).colorScheme.outline)),
                         ],
                       ),
                     ),
@@ -238,11 +335,11 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
                   padding: const EdgeInsets.all(24),
                   child: Text(
                     profiles.isEmpty
-                        ? 'No players enrolled in ${widget.batch.sport} yet.\nEnroll players in this sport first.'
+                        ? 'No players enrolled in ${widget.batch.sport} yet.'
                         : 'No players found.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: Theme.of(context).colorScheme.outline),
+                    style:
+                        TextStyle(color: Theme.of(context).colorScheme.outline),
                   ),
                 )
               else
@@ -260,8 +357,7 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
                         value: inBatch,
                         onChanged: isSaving
                             ? null
-                            : (_) =>
-                                _toggle(player.uid, profile, !inBatch),
+                            : (_) => _toggle(player.uid, profile, !inBatch),
                         title: Text(player.name),
                         subtitle: profile?.batchId.isNotEmpty == true &&
                                 profile?.batchId != widget.batch.id
@@ -272,8 +368,7 @@ class _BatchMembersSheetState extends State<_BatchMembersSheet> {
                             ? const SizedBox(
                                 width: 20,
                                 height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2))
+                                child: CircularProgressIndicator(strokeWidth: 2))
                             : null,
                         dense: true,
                       );
