@@ -19,6 +19,7 @@ class AppConstants {
   static const String roleOrgAdmin = 'org_admin';
   static const String roleCoach = 'coach';
   static const String rolePlayer = 'player';
+  static const String roleGuardian = 'guardian';
 
   // ── Session types ─────────────────────────────────────
   static const String sessionTypeTraining = 'training';

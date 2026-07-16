@@ -57,6 +57,7 @@ class PlayerModel {
   final PlayerHealth health;
   final String? bio;
   final bool isActive;
+  final String? guardianUid;
 
   const PlayerModel({
     required this.uid,
@@ -74,6 +75,7 @@ class PlayerModel {
     this.health = const PlayerHealth(),
     this.bio,
     this.isActive = true,
+    this.guardianUid,
   });
 
   factory PlayerModel.fromMap(Map<String, dynamic> map, String uid) {
@@ -97,6 +99,7 @@ class PlayerModel {
           : const PlayerHealth(),
       bio: map['bio'] as String?,
       isActive: map['isActive'] as bool? ?? true,
+      guardianUid: map['guardianUid'] as String?,
     );
   }
 
@@ -116,6 +119,7 @@ class PlayerModel {
       if (!health.isEmpty) 'health': health.toMap(),
       if (bio != null && bio!.isNotEmpty) 'bio': bio,
       'isActive': isActive,
+      if (guardianUid != null && guardianUid!.isNotEmpty) 'guardianUid': guardianUid,
     };
   }
 }
