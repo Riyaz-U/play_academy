@@ -14,6 +14,7 @@ import 'providers/payment_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/drill_provider.dart';
 import 'providers/batch_provider.dart';
+import 'providers/guardian_provider.dart';
 import 'services/firestore_service.dart';
 
 void main() async {
@@ -42,6 +43,7 @@ class PlayAcademyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DashboardProvider(FirestoreService())),
         ChangeNotifierProvider(create: (_) => DrillProvider(FirestoreService())),
         ChangeNotifierProvider(create: (_) => BatchProvider()),
+        ChangeNotifierProvider(create: (_) => GuardianProvider()),
       ],
       child: const _AppRouter(),
     );
