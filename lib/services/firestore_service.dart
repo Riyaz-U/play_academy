@@ -347,6 +347,16 @@ class FirestoreService {
               .map((d) => PlayerModel.fromMap(d.data(), d.id))
               .toList());
 
+  Stream<List<PlayerModel>> streamPlayersByGuardian(String guardianUid) =>
+      _db
+          .collection(AppConstants.playersCollection)
+          .where('guardianUid', isEqualTo: guardianUid)
+          .orderBy('name')
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => PlayerModel.fromMap(d.data(), d.id))
+              .toList());
+
   // ── Sessions ───────────────────────────────────────────
 
   Future<String> createSession(Map<String, dynamic> data) async {

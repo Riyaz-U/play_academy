@@ -86,6 +86,15 @@ class PlayerProvider extends ChangeNotifier {
     });
   }
 
+  void listenByGuardian(String guardianUid) {
+    _subscription?.cancel();
+    _subscription =
+        _firestoreService.streamPlayersByGuardian(guardianUid).listen((list) {
+      _players = list;
+      notifyListeners();
+    });
+  }
+
   List<PlayerModel> getByBranch(String branchId) =>
       _players.where((p) => p.branchId == branchId).toList();
 
