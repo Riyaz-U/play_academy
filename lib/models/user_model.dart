@@ -27,6 +27,7 @@ class UserModel {
   bool get isOrgAdmin => role == AppConstants.roleOrgAdmin;
   bool get isCoach => role == AppConstants.roleCoach;
   bool get isPlayer => role == AppConstants.rolePlayer;
+  bool get isGuardian => role == AppConstants.roleGuardian;
 
   factory UserModel.fromMap(Map<String, dynamic> map, String uid) {
     return UserModel(

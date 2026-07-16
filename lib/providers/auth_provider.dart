@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isOrgAdmin => _userModel?.isOrgAdmin ?? false;
   bool get isCoach => _userModel?.isCoach ?? false;
   bool get isPlayer => _userModel?.isPlayer ?? false;
+  bool get isGuardian => _userModel?.isGuardian ?? false;
 
   AuthProvider() {
     _listenToAuthState();

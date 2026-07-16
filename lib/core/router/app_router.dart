@@ -59,6 +59,7 @@ GoRouter createRouter(AuthProvider authProvider) {
         if (role == AppConstants.roleOrgAdmin) return '/org';
         if (role == AppConstants.roleCoach) return '/coach';
         if (role == AppConstants.rolePlayer) return '/player';
+        if (role == AppConstants.roleGuardian) return '/player';
       }
 
       if (loc.startsWith('/org') && role != AppConstants.roleOrgAdmin) {
@@ -67,7 +68,9 @@ GoRouter createRouter(AuthProvider authProvider) {
       if (loc.startsWith('/coach') && role != AppConstants.roleCoach) {
         return '/login';
       }
-      if (loc.startsWith('/player') && role != AppConstants.rolePlayer) {
+      if (loc.startsWith('/player') &&
+          role != AppConstants.rolePlayer &&
+          role != AppConstants.roleGuardian) {
         return '/login';
       }
 
