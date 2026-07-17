@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/auth_provider.dart';
 import '../../../providers/payment_provider.dart';
+import '../../../providers/player_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../models/payment_model.dart';
@@ -20,7 +20,7 @@ class _PlayerPaymentsScreenState extends State<PlayerPaymentsScreen> {
   @override
   Widget build(BuildContext context) {
     final payments = context.watch<PaymentProvider>();
-    final user = context.read<AuthProvider>().userModel;
+    final playerSelf = context.watch<PlayerProvider>().self;
 
     final displayed =
         _showPending ? payments.pendingPayments : payments.paidPayments;
@@ -121,14 +121,13 @@ class _PlayerPaymentsScreenState extends State<PlayerPaymentsScreen> {
                       isLoading: payments.isLoading,
                       onPay: displayed[i].isPending || displayed[i].isOverdue
                           ? () {
-                              if (user == null) return;
                               context
                                   .read<PaymentProvider>()
                                   .setCurrentPaymentDocId(displayed[i].id);
                               context.read<PaymentProvider>().initiatePayment(
                                     payment: displayed[i],
-                                    playerName: user.name,
-                                    playerEmail: user.email,
+                                    playerName: playerSelf?.name ?? '',
+                                    playerEmail: playerSelf?.email ?? '',
                                   );
                             }
                           : null,

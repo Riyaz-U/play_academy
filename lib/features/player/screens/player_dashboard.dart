@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/guardian_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/session_provider.dart';
 import '../../../providers/attendance_provider.dart';
@@ -29,26 +30,37 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
   List<StatsHistoryModel> _history = [];
   String? _selectedSport;
   String? _selectedStatKey; // null = Overall
+  String? _activePlayerId;
   StreamSubscription<List<SportProfileModel>>? _profileSub;
   StreamSubscription<List<StatsHistoryModel>>? _historySub;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final uid = context.read<AuthProvider>().userModel?.uid;
-      if (uid != null) {
-        final fs = FirestoreService();
-        _profileSub = fs.streamSportProfiles(uid).listen((profiles) =>
-            setState(() {
-              _profiles = profiles;
-              _selectedSport ??=
-                  profiles.isNotEmpty ? profiles.first.sport : null;
-            }));
-        _historySub = fs.streamStatsHistory(uid).listen(
-            (history) => setState(() => _history = history));
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final auth = context.watch<AuthProvider>();
+    final String? uid = auth.isGuardian
+        ? context.watch<GuardianProvider>().selectedChild?.uid
+        : auth.userModel?.uid;
+
+    if (uid != null && uid != _activePlayerId) {
+      _activePlayerId = uid;
+      _profileSub?.cancel();
+      _historySub?.cancel();
+      _selectedSport = null;
+      final fs = FirestoreService();
+      _profileSub = fs.streamSportProfiles(uid).listen((profiles) {
+        if (mounted) {
+          setState(() {
+            _profiles = profiles;
+            _selectedSport ??=
+                profiles.isNotEmpty ? profiles.first.sport : null;
+          });
+        }
+      });
+      _historySub = fs.streamStatsHistory(uid).listen((history) {
+        if (mounted) setState(() => _history = history);
+      });
+    }
   }
 
   @override
@@ -65,7 +77,8 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().userModel;
-    context.watch<PlayerProvider>().self;
+    final playerSelf = context.watch<PlayerProvider>().self;
+    final displayName = playerSelf?.name ?? user?.name ?? '';
     final sessions = context.watch<SessionProvider>();
     final attendance = context.watch<AttendanceProvider>();
     final payments = context.watch<PaymentProvider>();
@@ -122,7 +135,7 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
             itemBuilder: (_) => [
               PopupMenuItem(
                 enabled: false,
-                child: Text(user?.name ?? '',
+                child: Text(displayName,
                     style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textDark)),
@@ -191,8 +204,8 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
                         ),
                         child: Center(
                           child: Text(
-                            user?.name.isNotEmpty == true
-                                ? user!.name[0].toUpperCase()
+                            displayName.isNotEmpty
+                                ? displayName[0].toUpperCase()
                                 : '?',
                             style: const TextStyle(
                                 color: AppTheme.primaryGreen,
@@ -207,7 +220,7 @@ class _PlayerDashboardState extends State<PlayerDashboard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              user?.name ?? '',
+                              displayName,
                               style: const TextStyle(
                                   color: AppTheme.onPrimary,
                                   fontSize: 18,

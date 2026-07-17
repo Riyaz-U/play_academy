@@ -25,7 +25,7 @@ class GuardianProvider extends ChangeNotifier {
       if (_selectedChild != null) {
         _selectedChild = list.where((p) => p.uid == _selectedChild!.uid).firstOrNull;
       }
-      if (_selectedChild == null && list.length == 1) {
+      if (_selectedChild == null && list.isNotEmpty) {
         _selectedChild = list.first;
       }
       notifyListeners();
