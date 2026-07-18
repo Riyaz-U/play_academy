@@ -111,6 +111,7 @@ class PlayerProvider extends ChangeNotifier {
     String? parentName,
     String? parentPhone,
     String? parentEmail,
+    String? guardianUid,
     String? bio,
     PlayerHealth health = const PlayerHealth(),
   }) async {
@@ -147,6 +148,7 @@ class PlayerProvider extends ChangeNotifier {
         parentName: parentName,
         parentPhone: parentPhone,
         parentEmail: parentEmail,
+        guardianUid: guardianUid,
         bio: bio,
         health: health,
       );
@@ -177,6 +179,7 @@ class PlayerProvider extends ChangeNotifier {
     String? parentName,
     String? parentPhone,
     String? parentEmail,
+    String? guardianUid,
     String? bio,
     PlayerHealth health = const PlayerHealth(),
   }) async {
@@ -192,6 +195,7 @@ class PlayerProvider extends ChangeNotifier {
         'parentName': parentName,
         'parentPhone': parentPhone,
         'parentEmail': parentEmail,
+        'guardianUid': guardianUid,
         'bio': bio,
         if (!health.isEmpty) 'health': health.toMap() else 'health': null,
       });

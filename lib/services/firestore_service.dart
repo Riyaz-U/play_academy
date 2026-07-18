@@ -52,6 +52,17 @@ class FirestoreService {
     return UserModel.fromMap(doc.data()!, uid);
   }
 
+  Future<UserModel?> getUserByEmail(String email) async {
+    final snap = await _db
+        .collection(AppConstants.usersCollection)
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    final doc = snap.docs.first;
+    return UserModel.fromMap(doc.data(), doc.id);
+  }
+
   Future<void> updateFcmToken(String uid, String token) =>
       _db
           .collection(AppConstants.usersCollection)

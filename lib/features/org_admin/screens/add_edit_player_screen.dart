@@ -62,6 +62,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
   final _parentNameCtrl = TextEditingController();
   final _parentPhoneCtrl = TextEditingController();
   final _parentEmailCtrl = TextEditingController();
+  final _guardianEmailCtrl = TextEditingController();
 
   // Health
   final _heightCtrl = TextEditingController();
@@ -122,6 +123,14 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
       _allergiesCtrl.text = p.health.allergies ?? '';
       _medicationsCtrl.text = p.health.medications ?? '';
 
+      if (p.guardianUid != null && p.guardianUid!.isNotEmpty) {
+        final guardianUser =
+            await FirestoreService().getUserDoc(p.guardianUid!);
+        if (guardianUser != null) {
+          _guardianEmailCtrl.text = guardianUser.email;
+        }
+      }
+
       final profiles =
           await FirestoreService().streamSportProfiles(p.uid).first;
       setState(() {
@@ -145,6 +154,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
     _parentNameCtrl.dispose();
     _parentPhoneCtrl.dispose();
     _parentEmailCtrl.dispose();
+    _guardianEmailCtrl.dispose();
     _heightCtrl.dispose();
     _weightCtrl.dispose();
     _bloodGroupCtrl.dispose();
@@ -201,6 +211,30 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
     final adminUid = context.read<AuthProvider>().userModel!.uid;
     final orgId = context.read<AuthProvider>().userModel!.organizationId;
 
+    // Resolve guardian uid from email field
+    String? resolvedGuardianUid;
+    final guardianEmailInput = _guardianEmailCtrl.text.trim();
+    if (guardianEmailInput.isNotEmpty) {
+      final guardianUser =
+          await FirestoreService().getUserByEmail(guardianEmailInput);
+      if (!mounted) return;
+      if (guardianUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No account found with that email'),
+          backgroundColor: AppTheme.errorRed,
+        ));
+        return;
+      }
+      if (!guardianUser.isGuardian) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('That account is not a guardian account'),
+          backgroundColor: AppTheme.errorRed,
+        ));
+        return;
+      }
+      resolvedGuardianUid = guardianUser.uid;
+    }
+
     bool success;
     if (_isEditing) {
       success = await provider.updatePlayer(
@@ -218,6 +252,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
         parentEmail: _parentEmailCtrl.text.trim().isEmpty
             ? null
             : _parentEmailCtrl.text.trim(),
+        guardianUid: resolvedGuardianUid,
         bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
         health: _health,
       );
@@ -299,6 +334,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
         parentEmail: _parentEmailCtrl.text.trim().isEmpty
             ? null
             : _parentEmailCtrl.text.trim(),
+        guardianUid: resolvedGuardianUid,
         bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
         health: _health,
       );
@@ -504,6 +540,25 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _guardianEmailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Guardian App Account Email (optional)',
+                  prefixIcon: Icon(Icons.shield_outlined),
+                  helperText:
+                      'Link a guardian account so the parent can log in and view this player',
+                  helperMaxLines: 2,
+                ),
+                validator: (v) {
+                  if (v == null || v.trim().isEmpty) return null;
+                  if (!v.contains('@') || !v.contains('.')) {
+                    return 'Invalid email';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
 
