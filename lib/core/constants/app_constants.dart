@@ -14,6 +14,7 @@ class AppConstants {
   static const String qrSessionsCollection = 'qrSessions';
   static const String sportProfilesCollection = 'sportProfiles';
   static const String batchesCollection = 'batches';
+  static const String guardiansCollection = 'guardians';
 
   // ── Roles ─────────────────────────────────────────────
   static const String roleOrgAdmin = 'org_admin';

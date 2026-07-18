@@ -14,6 +14,7 @@ import '../models/payment_model.dart';
 import '../models/qr_session_model.dart';
 import '../models/sport_profile_model.dart';
 import '../models/batch_model.dart';
+import '../models/guardian_model.dart';
 import '../core/constants/app_constants.dart';
 
 class FirestoreService {
@@ -356,6 +357,40 @@ class FirestoreService {
           .snapshots()
           .map((s) => s.docs
               .map((d) => PlayerModel.fromMap(d.data(), d.id))
+              .toList());
+
+  // ── Guardians ──────────────────────────────────────────
+
+  Future<void> createGuardianDoc(String uid, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.guardiansCollection).doc(uid).set(data);
+
+  Future<void> updateGuardianDoc(String uid, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.guardiansCollection).doc(uid).update(data);
+
+  Future<void> deleteGuardian(String uid) async {
+    await _db.collection(AppConstants.guardiansCollection).doc(uid).delete();
+    await _db.collection(AppConstants.usersCollection).doc(uid).delete();
+  }
+
+  Future<void> setGuardianActive(String uid, bool isActive) async {
+    await _db
+        .collection(AppConstants.guardiansCollection)
+        .doc(uid)
+        .update({'isActive': isActive});
+    await _db
+        .collection(AppConstants.usersCollection)
+        .doc(uid)
+        .update({'isActive': isActive});
+  }
+
+  Stream<List<GuardianModel>> streamGuardians(String organizationId) =>
+      _db
+          .collection(AppConstants.guardiansCollection)
+          .where('organizationId', isEqualTo: organizationId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => GuardianModel.fromMap(d.data(), d.id))
               .toList());
 
   Stream<List<PlayerModel>> streamPlayersByGuardian(String guardianUid) =>

@@ -13,6 +13,8 @@ import '../../features/org_admin/screens/players_screen.dart';
 import '../../features/org_admin/screens/add_edit_player_screen.dart';
 import '../../features/org_admin/screens/coaches_screen.dart';
 import '../../features/org_admin/screens/add_edit_coach_screen.dart';
+import '../../features/org_admin/screens/guardians_screen.dart';
+import '../../features/org_admin/screens/add_edit_guardian_screen.dart';
 import '../../features/coach/screens/coach_shell.dart';
 import '../../features/coach/screens/coach_dashboard.dart';
 import '../../features/coach/screens/sessions_screen.dart';
@@ -96,6 +98,9 @@ GoRouter createRouter(AuthProvider authProvider) {
           GoRoute(
               path: '/org/batches',
               builder: (_, _) => const AdminBatchesScreen()),
+          GoRoute(
+              path: '/org/guardians',
+              builder: (_, _) => const GuardiansScreen()),
         ],
       ),
 
@@ -177,6 +182,13 @@ GoRouter createRouter(AuthProvider authProvider) {
           path: '/org/batches/edit/:id',
           builder: (_, state) => OrgAdminAddEditBatchScreen(
               batchId: state.pathParameters['id'])),
+      GoRoute(
+          path: '/org/guardians/add',
+          builder: (_, _) => const AddEditGuardianScreen()),
+      GoRoute(
+          path: '/org/guardians/edit/:id',
+          builder: (_, state) =>
+              AddEditGuardianScreen(guardianId: state.pathParameters['id'])),
 
       // Coach
       GoRoute(

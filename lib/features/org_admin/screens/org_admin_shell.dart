@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/batch_provider.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../providers/guardian_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/coach_provider.dart';
 
@@ -27,6 +28,7 @@ class _OrgAdminShellState extends State<OrgAdminShell> {
       context.read<PlayerProvider>().listenByOrg(orgId);
       context.read<CoachProvider>().listenByOrg(orgId);
       context.read<BatchProvider>().listenByOrg(orgId);
+      context.read<GuardianProvider>().listenByOrg(orgId);
     });
   }
 
@@ -36,6 +38,7 @@ class _OrgAdminShellState extends State<OrgAdminShell> {
     if (loc.startsWith('/org/players')) return 2;
     if (loc.startsWith('/org/coaches')) return 3;
     if (loc.startsWith('/org/batches')) return 4;
+    if (loc.startsWith('/org/guardians')) return 5;
     return 0;
   }
 
@@ -57,6 +60,8 @@ class _OrgAdminShellState extends State<OrgAdminShell> {
               context.go('/org/coaches');
             case 4:
               context.go('/org/batches');
+            case 5:
+              context.go('/org/guardians');
           }
         },
         destinations: const [
@@ -84,6 +89,11 @@ class _OrgAdminShellState extends State<OrgAdminShell> {
             icon: Icon(Icons.group_work_outlined),
             selectedIcon: Icon(Icons.group_work),
             label: 'Batches',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.family_restroom_outlined),
+            selectedIcon: Icon(Icons.family_restroom),
+            label: 'Guardians',
           ),
         ],
       ),
