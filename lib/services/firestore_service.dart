@@ -15,6 +15,7 @@ import '../models/qr_session_model.dart';
 import '../models/sport_profile_model.dart';
 import '../models/batch_model.dart';
 import '../models/guardian_model.dart';
+import '../models/invitation_model.dart';
 import '../core/constants/app_constants.dart';
 
 class FirestoreService {
@@ -594,6 +595,56 @@ class FirestoreService {
       .snapshots()
       .map((s) =>
           s.docs.map((d) => BatchModel.fromMap(d.data(), d.id)).toList());
+
+  // ── Invitations ────────────────────────────────────────
+
+  Future<String> createInvitation(Map<String, dynamic> data) async {
+    final doc =
+        await _db.collection(AppConstants.invitationsCollection).add(data);
+    return doc.id;
+  }
+
+  Future<InvitationModel?> getInvitationById(String id) async {
+    final doc = await _db
+        .collection(AppConstants.invitationsCollection)
+        .doc(id)
+        .get();
+    if (!doc.exists) return null;
+    return InvitationModel.fromMap(doc.data()!, doc.id);
+  }
+
+  /// Returns the most recent pending invite for this email, or null.
+  Future<InvitationModel?> getInvitationByEmail(String email) async {
+    final snap = await _db
+        .collection(AppConstants.invitationsCollection)
+        .where('email', isEqualTo: email)
+        .where('status', isEqualTo: AppConstants.inviteStatusPending)
+        .orderBy('invitedAt', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return InvitationModel.fromMap(snap.docs.first.data(), snap.docs.first.id);
+  }
+
+  Future<void> updateInvitationStatus(String id, String status) =>
+      _db
+          .collection(AppConstants.invitationsCollection)
+          .doc(id)
+          .update({'status': status});
+
+  Future<void> deleteInvitation(String id) =>
+      _db.collection(AppConstants.invitationsCollection).doc(id).delete();
+
+  Stream<List<InvitationModel>> streamInvitationsByOrg(
+          String organizationId) =>
+      _db
+          .collection(AppConstants.invitationsCollection)
+          .where('organizationId', isEqualTo: organizationId)
+          .orderBy('invitedAt', descending: true)
+          .snapshots()
+          .map((s) => s.docs
+              .map((d) => InvitationModel.fromMap(d.data(), d.id))
+              .toList());
 
   // ── Attendance (single record) ─────────────────────────
 
