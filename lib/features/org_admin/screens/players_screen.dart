@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../providers/invitation_provider.dart';
 import '../../../core/theme/app_theme.dart';
 
 class OrgPlayersScreen extends StatefulWidget {
@@ -26,9 +27,13 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
     }
     // category filter removed — category now lives in sportProfiles
 
+    final pendingCount =
+        context.watch<InvitationProvider>().pendingInvitations.length;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Players (${filtered.length})'),
+        actions: [_InvitesBadge(count: pendingCount)],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/org/players/add'),
@@ -212,6 +217,46 @@ class _OrgPlayersScreenState extends State<OrgPlayersScreen> {
           ),
         ) ??
         false;
+  }
+}
+
+class _InvitesBadge extends StatelessWidget {
+  final int count;
+  const _InvitesBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.mail_outline),
+          tooltip: 'Invitations',
+          onPressed: () => context.push('/org/invitations'),
+        ),
+        if (count > 0)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: AppTheme.warningOrange,
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text(
+                '$count',
+                style: const TextStyle(
+                    fontSize: 9,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }
 
