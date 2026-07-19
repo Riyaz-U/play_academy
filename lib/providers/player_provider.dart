@@ -101,7 +101,7 @@ class PlayerProvider extends ChangeNotifier {
 
   Future<bool> createPlayer({
     required String name,
-    required String email,
+    String? email, // optional — child players with no login leave this blank
     required int age,
     required String phone,
     required String organizationId,
@@ -119,26 +119,34 @@ class PlayerProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final uid = await _authService.createAccountWithoutSignOut(
-        email: email,
-        password: const Uuid().v4(),
-      );
+      String uid;
+      final hasEmail = email != null && email.isNotEmpty;
 
-      final userDoc = UserModel(
-        uid: uid,
-        name: name,
-        email: email,
-        role: AppConstants.rolePlayer,
-        organizationId: organizationId,
-        branchId: branchId,
-        createdAt: DateTime.now(),
-      );
-      await _firestoreService.createUserDoc(uid, userDoc.toMap());
+      if (hasEmail) {
+        // Player can log in — create a Firebase Auth account and users doc.
+        uid = await _authService.createAccountWithoutSignOut(
+          email: email,
+          password: const Uuid().v4(),
+        );
+        final userDoc = UserModel(
+          uid: uid,
+          name: name,
+          email: email,
+          role: AppConstants.rolePlayer,
+          organizationId: organizationId,
+          branchId: branchId,
+          createdAt: DateTime.now(),
+        );
+        await _firestoreService.createUserDoc(uid, userDoc.toMap());
+      } else {
+        // Child player with no email — just a Firestore record, no login.
+        uid = const Uuid().v4();
+      }
 
       final playerDoc = PlayerModel(
         uid: uid,
         name: name,
-        email: email,
+        email: email ?? '',
         age: age,
         phone: phone,
         organizationId: organizationId,

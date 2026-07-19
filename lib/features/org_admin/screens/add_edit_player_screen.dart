@@ -313,9 +313,10 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
               ))
           .toList();
 
+      final playerEmail = _emailCtrl.text.trim();
       success = await provider.createPlayer(
         name: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
+        email: playerEmail.isEmpty ? null : playerEmail,
         age: int.tryParse(_ageCtrl.text) ?? 0,
         phone: _phoneCtrl.text.trim(),
         organizationId: orgId,
@@ -338,9 +339,10 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
     }
 
     if (success && mounted) {
-      if (!_isEditing) {
+      final playerEmail = _emailCtrl.text.trim();
+      if (!_isEditing && playerEmail.isNotEmpty) {
         await context.read<InvitationProvider>().sendInvite(
-              email: _emailCtrl.text.trim(),
+              email: playerEmail,
               role: AppConstants.rolePlayer,
               organizationId: orgId,
               branchId: _branchId!,
@@ -352,7 +354,9 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_isEditing
             ? 'Player updated successfully'
-            : 'Invitation sent to ${_emailCtrl.text.trim()}'),
+            : playerEmail.isNotEmpty
+                ? 'Invitation sent to $playerEmail'
+                : 'Player added successfully'),
         backgroundColor: AppTheme.successGreen,
       ));
       context.pop();
@@ -471,11 +475,13 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                      labelText: 'Player Email *',
+                      labelText: 'Player Email (optional)',
+                      hintText: 'Leave blank for child players',
                       prefixIcon: Icon(Icons.email_outlined)),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter email';
-                    if (!v.contains('@')) return 'Invalid email';
+                    if (v != null && v.isNotEmpty && !v.contains('@')) {
+                      return 'Invalid email';
+                    }
                     return null;
                   },
                 ),
