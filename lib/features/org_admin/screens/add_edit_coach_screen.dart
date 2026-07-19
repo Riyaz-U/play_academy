@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/coach_provider.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../providers/invitation_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 
 class AddEditCoachScreen extends StatefulWidget {
   final String? coachId;
@@ -18,10 +20,8 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   String? _branchId;
-  bool _obscure = true;
   bool get _isEditing => widget.coachId != null;
 
   @override
@@ -48,7 +48,6 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
@@ -76,19 +75,31 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
       success = await provider.createCoach(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         organizationId: auth.organizationId,
         branchId: _branchId!,
         adminUid: auth.uid,
       );
+
+      if (success && mounted) {
+        await context.read<InvitationProvider>().sendInvite(
+              email: _emailCtrl.text.trim(),
+              role: AppConstants.roleCoach,
+              organizationId: auth.organizationId,
+              branchId: _branchId!,
+              name: _nameCtrl.text.trim().isEmpty
+                  ? null
+                  : _nameCtrl.text.trim(),
+              adminUid: auth.uid,
+            );
+      }
     }
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_isEditing
             ? 'Coach updated'
-            : 'Coach account created'),
+            : 'Invitation sent to ${_emailCtrl.text.trim()}'),
         backgroundColor: AppTheme.successGreen,
       ));
       context.pop();
@@ -102,7 +113,7 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Coach' : 'Add Coach'),
+        title: Text(_isEditing ? 'Edit Coach' : 'Invite Coach'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => context.pop(),
@@ -152,18 +163,23 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
                 const SizedBox(height: 24),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Login Credentials',
+                  child: Text('Invitation',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                           color: AppTheme.textDark)),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'An email with a sign-in link will be sent to the coach.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textGrey),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Coach Email',
                       prefixIcon: Icon(Icons.email_outlined)),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter email';
@@ -171,31 +187,11 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _passwordCtrl,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: 'Temporary Password',
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter password';
-                    if (v.length < 6) return 'Min 6 characters';
-                    return null;
-                  },
-                ),
               ],
               if (provider.error != null) ...[
                 const SizedBox(height: 12),
-                Text(provider.error!, style: const TextStyle(color: AppTheme.errorRed)),
+                Text(provider.error!,
+                    style: const TextStyle(color: AppTheme.errorRed)),
               ],
               const SizedBox(height: 32),
               SizedBox(
@@ -210,7 +206,11 @@ class _AddEditCoachScreenState extends State<AddEditCoachScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(_isEditing ? 'Save Changes' : 'Create Coach', style: TextStyle(fontSize: 14, color: AppTheme.onPrimary)),
+                      : Text(
+                          _isEditing ? 'Save Changes' : 'Send Invitation',
+                          style: const TextStyle(
+                              fontSize: 14, color: AppTheme.onPrimary),
+                        ),
                 ),
               ),
             ],

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/branch_provider.dart';
+import '../../../providers/invitation_provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../models/batch_model.dart';
@@ -53,7 +54,6 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
   // Personal
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _bioCtrl = TextEditingController();
@@ -72,7 +72,6 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
   final _medicationsCtrl = TextEditingController();
 
   String? _branchId;
-  bool _obscure = true;
   bool get _isEditing => widget.playerId != null;
 
   List<_EnrollmentDraft> _enrollments = [];
@@ -147,7 +146,6 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
     _ageCtrl.dispose();
     _phoneCtrl.dispose();
     _bioCtrl.dispose();
@@ -318,7 +316,6 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
       success = await provider.createPlayer(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
         age: int.tryParse(_ageCtrl.text) ?? 0,
         phone: _phoneCtrl.text.trim(),
         organizationId: orgId,
@@ -341,10 +338,21 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
     }
 
     if (success && mounted) {
+      if (!_isEditing) {
+        await context.read<InvitationProvider>().sendInvite(
+              email: _emailCtrl.text.trim(),
+              role: AppConstants.rolePlayer,
+              organizationId: orgId,
+              branchId: _branchId!,
+              name: _nameCtrl.text.trim().isEmpty ? null : _nameCtrl.text.trim(),
+              adminUid: adminUid,
+            );
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_isEditing
             ? 'Player updated successfully'
-            : 'Player account created'),
+            : 'Invitation sent to ${_emailCtrl.text.trim()}'),
         backgroundColor: AppTheme.successGreen,
       ));
       context.pop();
@@ -365,7 +373,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Player' : 'Add Player'),
+        title: Text(_isEditing ? 'Edit Player' : 'Invite Player'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => context.pop(),
@@ -450,47 +458,26 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ── Section 2: Credentials (add only) ────────────────────
+              // ── Section 2: Invitation (add only) ─────────────────────
               if (!_isEditing) ...[
-                const _SectionHeader('Login Credentials'),
+                const _SectionHeader('Invitation'),
+                const SizedBox(height: 8),
+                const Text(
+                  'An email with a sign-in link will be sent to the player.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                      labelText: 'Email *',
+                      labelText: 'Player Email *',
                       prefixIcon: Icon(Icons.email_outlined)),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter email';
                     if (!v.contains('@')) return 'Invalid email';
                     return null;
                   },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _passwordCtrl,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: 'Temporary Password *',
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter password';
-                    if (v.length < 6) return 'Min 6 characters';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Share these credentials with the player to login.',
-                  style: TextStyle(color: AppTheme.textGrey, fontSize: 12),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -690,7 +677,7 @@ class _AddEditPlayerScreenState extends State<AddEditPlayerScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2, color: Colors.white),
                         )
-                      : Text(_isEditing ? 'Save Changes' : 'Create Player'),
+                      : Text(_isEditing ? 'Save Changes' : 'Send Invitation'),
                 ),
               ),
               const SizedBox(height: 20),

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../models/guardian_model.dart';
 import '../models/player_model.dart';
 import '../models/user_model.dart';
@@ -35,7 +36,6 @@ class GuardianProvider extends ChangeNotifier {
   Future<bool> createGuardian({
     required String name,
     required String email,
-    required String password,
     required String phone,
     required String organizationId,
     required String adminUid,
@@ -46,7 +46,7 @@ class GuardianProvider extends ChangeNotifier {
     try {
       final uid = await _authService.createAccountWithoutSignOut(
         email: email,
-        password: password,
+        password: const Uuid().v4(),
       );
 
       final userDoc = UserModel(

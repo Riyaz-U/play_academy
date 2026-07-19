@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/player_model.dart';
@@ -101,7 +102,6 @@ class PlayerProvider extends ChangeNotifier {
   Future<bool> createPlayer({
     required String name,
     required String email,
-    required String password,
     required int age,
     required String phone,
     required String organizationId,
@@ -121,7 +121,7 @@ class PlayerProvider extends ChangeNotifier {
     try {
       final uid = await _authService.createAccountWithoutSignOut(
         email: email,
-        password: password,
+        password: const Uuid().v4(),
       );
 
       final userDoc = UserModel(

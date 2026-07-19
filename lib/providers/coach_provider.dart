@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:uuid/uuid.dart';
 import '../models/coach_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -36,7 +37,6 @@ class CoachProvider extends ChangeNotifier {
   Future<bool> createCoach({
     required String name,
     required String email,
-    required String password,
     required String phone,
     required String organizationId,
     required String branchId,
@@ -48,7 +48,7 @@ class CoachProvider extends ChangeNotifier {
     try {
       final uid = await _authService.createAccountWithoutSignOut(
         email: email,
-        password: password,
+        password: const Uuid().v4(),
       );
 
       final userDoc = UserModel(

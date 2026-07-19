@@ -5,6 +5,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/batch_provider.dart';
 import '../../../providers/branch_provider.dart';
 import '../../../providers/guardian_provider.dart';
+import '../../../providers/invitation_provider.dart';
 import '../../../providers/player_provider.dart';
 import '../../../providers/coach_provider.dart';
 
@@ -29,6 +30,7 @@ class _OrgAdminShellState extends State<OrgAdminShell> {
       context.read<CoachProvider>().listenByOrg(orgId);
       context.read<BatchProvider>().listenByOrg(orgId);
       context.read<GuardianProvider>().listenByOrg(orgId);
+      context.read<InvitationProvider>().listenByOrg(orgId);
     });
   }
 

@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/guardian_provider.dart';
+import '../../../providers/invitation_provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 
 class AddEditGuardianScreen extends StatefulWidget {
   final String? guardianId;
@@ -17,9 +19,7 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _passwordCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  bool _obscure = true;
   bool get _isEditing => widget.guardianId != null;
 
   @override
@@ -46,7 +46,6 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _passwordCtrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
@@ -68,18 +67,29 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
       success = await provider.createGuardian(
         name: _nameCtrl.text.trim(),
         email: _emailCtrl.text.trim(),
-        password: _passwordCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
         organizationId: auth.organizationId,
         adminUid: auth.uid,
       );
+
+      if (success && mounted) {
+        await context.read<InvitationProvider>().sendInvite(
+              email: _emailCtrl.text.trim(),
+              role: AppConstants.roleGuardian,
+              organizationId: auth.organizationId,
+              name: _nameCtrl.text.trim().isEmpty
+                  ? null
+                  : _nameCtrl.text.trim(),
+              adminUid: auth.uid,
+            );
+      }
     }
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(_isEditing
             ? 'Guardian updated'
-            : 'Guardian account created'),
+            : 'Invitation sent to ${_emailCtrl.text.trim()}'),
         backgroundColor: AppTheme.successGreen,
       ));
       context.pop();
@@ -92,7 +102,7 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? 'Edit Guardian' : 'Add Guardian'),
+        title: Text(_isEditing ? 'Edit Guardian' : 'Invite Guardian'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
           onPressed: () => context.pop(),
@@ -128,50 +138,29 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
                 const SizedBox(height: 24),
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Login Credentials',
+                  child: Text('Invitation',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
                           color: AppTheme.textDark)),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'An email with a sign-in link will be sent to the guardian.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textGrey),
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Guardian Email',
                       prefixIcon: Icon(Icons.email_outlined)),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Enter email';
                     if (!v.contains('@')) return 'Invalid email';
                     return null;
                   },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _passwordCtrl,
-                  obscureText: _obscure,
-                  decoration: InputDecoration(
-                    labelText: 'Temporary Password',
-                    prefixIcon: const Icon(Icons.lock_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined),
-                      onPressed: () =>
-                          setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Enter password';
-                    if (v.length < 6) return 'Min 6 characters';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Share these credentials with the guardian to log in.',
-                  style: TextStyle(color: AppTheme.textGrey, fontSize: 12),
                 ),
               ],
               if (provider.error != null) ...[
@@ -193,7 +182,7 @@ class _AddEditGuardianScreenState extends State<AddEditGuardianScreen> {
                               strokeWidth: 2, color: Colors.white),
                         )
                       : Text(
-                          _isEditing ? 'Save Changes' : 'Create Guardian',
+                          _isEditing ? 'Save Changes' : 'Send Invitation',
                           style: const TextStyle(
                               fontSize: 14, color: AppTheme.onPrimary),
                         ),
