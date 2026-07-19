@@ -24,6 +24,26 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Firebase Email Link — intercepts the email link on Android -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="play-academy-a73b2.firebaseapp.com"/>
+            </intent-filter>
+
+            <!-- Firebase Hosting continueUrl — intercepts the post-verification redirect -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="play-academy-a73b2.web.app"/>
+            </intent-filter>
         </activity>
 
         <!-- FCM default notification channel -->
