@@ -66,14 +66,13 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
     });
 
     if (widget.email.isEmpty || widget.inviteId.isEmpty) {
-      _setError(
-          'Invalid invitation link. Please ask your admin to resend the invite.');
+      _setError('Invalid invitation link. Please ask your admin to resend the invite.');
       return;
     }
 
     try {
-      // If already signed in with the same email (e.g., re-tapping the link after
-      // a crash or background/foreground cycle), skip re-authenticating with the link.
+      // If already signed in with the same email (re-tap after crash, or the
+      // Firestore user doc was already created on a previous attempt), skip sign-in.
       final current = FirebaseAuth.instance.currentUser;
       final alreadySignedIn = current != null &&
           current.email?.toLowerCase() == widget.email.toLowerCase();
@@ -83,7 +82,8 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
       } else {
         if (widget.link.isEmpty) {
           _setError(
-              'Invalid invitation link. Please ask your admin to resend the invite.');
+              'The sign-in link could not be read. Please open the email link '
+              'directly from your mail app, or ask your admin to resend the invite.');
           return;
         }
         final credential = await _authService.completeEmailLinkSignIn(
@@ -91,8 +91,12 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
         _uid = credential.user?.uid;
       }
 
-      final invite =
-          await _firestoreService.getInvitationById(widget.inviteId);
+      if (_uid == null) {
+        _setError('Sign-in failed. Please try again.');
+        return;
+      }
+
+      final invite = await _firestoreService.getInvitationById(widget.inviteId);
 
       if (invite == null || invite.isRevoked) {
         _setError(invite == null
@@ -102,12 +106,26 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
       }
 
       if (invite.isAccepted) {
-        // Already set up — just go home
         _navigateHome(invite.role);
         return;
       }
 
       _invite = invite;
+
+      // Ensure a users doc exists so AuthProvider won't sign the user out while
+      // they fill the form. If admin pre-created it (the normal flow), leave it
+      // intact — only create it for email-link-only invites where no doc exists.
+      final existingDoc = await _firestoreService.getUserDoc(_uid!);
+      if (existingDoc == null) {
+        await _firestoreService.createUserDoc(_uid!, {
+          'email': widget.email.toLowerCase(),
+          'role': invite.role,
+          'organizationId': invite.organizationId,
+          'isActive': true,
+          if (invite.name != null && invite.name!.isNotEmpty) 'name': invite.name,
+        });
+      }
+
       if (invite.name != null && invite.name!.isNotEmpty) {
         _nameCtrl.text = invite.name!;
       }
@@ -126,15 +144,43 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
     setState(() => _state = _AcceptState.saving);
 
     try {
-      await _authService.updatePassword(_passCtrl.text);
+      final name = _nameCtrl.text.trim();
+      final phone = _phoneCtrl.text.trim();
+      final now = DateTime.now();
 
-      if (_uid != null) {
-        await _firestoreService.updateUserDoc(_uid!, {
-          'name': _nameCtrl.text.trim(),
-          'phone': _phoneCtrl.text.trim(),
-        });
+      // Update the user doc with the submitted name/phone.
+      await _firestoreService.updateUserDoc(_uid!, {
+        'name': name,
+        'phone': phone,
+      });
+
+      // Update the role-specific doc. If admin pre-created it (normal flow) we
+      // just patch name/phone; otherwise create it from scratch.
+      try {
+        if (_invite!.role == AppConstants.roleCoach) {
+          await _firestoreService.updateCoachDoc(_uid!, {'name': name, 'phone': phone});
+        } else {
+          await _firestoreService.updatePlayerDoc(_uid!, {'name': name, 'phone': phone});
+        }
+      } catch (_) {
+        // Doc doesn't exist yet (email-link-only invite) — create it.
+        final roleData = {
+          'email': widget.email.toLowerCase(),
+          'name': name,
+          'phone': phone,
+          'organizationId': _invite!.organizationId,
+          'branchId': _invite!.branchId ?? '',
+          'isActive': true,
+          'createdAt': now,
+        };
+        if (_invite!.role == AppConstants.roleCoach) {
+          await _firestoreService.createCoachDoc(_uid!, roleData);
+        } else {
+          await _firestoreService.createPlayerDoc(_uid!, roleData);
+        }
       }
 
+      await _authService.updatePassword(_passCtrl.text);
       await _firestoreService.updateInvitationStatus(
           widget.inviteId, AppConstants.inviteStatusAccepted);
 

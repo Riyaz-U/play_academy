@@ -53,14 +53,17 @@ GoRouter createRouter(AuthProvider authProvider) {
 
       if (status == AuthStatus.unknown) return null;
 
-      // /accept-invite must stay reachable for unauthenticated users
-      final onAuthPage =
-          loc == '/login' || loc == '/register' || loc.startsWith('/accept-invite');
+      final onAuthPage = loc == '/login' || loc == '/register';
+      // /accept-invite must stay reachable for both unauthenticated users (before
+      // sign-in) AND authenticated users (after sign-in, before form is submitted).
+      final onAcceptInvite = loc.startsWith('/accept-invite');
 
       if (status == AuthStatus.unauthenticated) {
-        return onAuthPage ? null : '/login';
+        return (onAuthPage || onAcceptInvite) ? null : '/login';
       }
 
+      // Redirect authenticated users away from login/register only —
+      // NOT from /accept-invite (they still need to complete the form).
       if (onAuthPage) {
         if (role == AppConstants.roleOrgAdmin) return '/org';
         if (role == AppConstants.roleCoach) return '/coach';

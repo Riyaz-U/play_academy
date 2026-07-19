@@ -78,27 +78,35 @@ class _AppRouterState extends State<_AppRouter> {
     final authService = AuthService();
 
     _linkSub = appLinks.uriLinkStream.listen((uri) {
+      debugPrint('[DeepLink] stream: $uri');
       _handleLink(uri.toString(), authService);
     });
 
     try {
       final initial = await appLinks.getInitialLink();
+      debugPrint('[DeepLink] getInitialLink: $initial');
       if (initial != null && mounted) {
         _handleLink(initial.toString(), authService);
       }
-    } catch (_) {
-      // No initial link or platform not supported
+    } catch (e) {
+      debugPrint('[DeepLink] getInitialLink error: $e');
     }
   }
 
   void _handleLink(String url, AuthService authService) {
-    if (!authService.isSignInWithEmailLink(url)) return;
-    final parsed = InviteConfig.parseIncomingLink(url);
+    debugPrint('[DeepLink] _handleLink url: $url');
+    // Firebase delivers the link wrapped in /__/auth/links?link=<encoded>.
+    // Unwrap so parseIncomingLink and signInWithEmailLink see the real URL.
+    final effectiveUrl = InviteConfig.unwrapLinksEnvelope(url);
+    debugPrint('[DeepLink] effectiveUrl: $effectiveUrl');
+    final parsed = InviteConfig.parseIncomingLink(effectiveUrl);
+    debugPrint('[DeepLink] parsed email=${parsed.email} inviteId=${parsed.inviteId}');
     if (parsed.email == null || parsed.inviteId == null) return;
+    debugPrint('[DeepLink] navigating to /accept-invite');
     _router.go('/accept-invite', extra: {
       'email': parsed.email!,
       'inviteId': parsed.inviteId!,
-      'link': url,
+      'link': authService.isSignInWithEmailLink(effectiveUrl) ? effectiveUrl : '',
     });
   }
 

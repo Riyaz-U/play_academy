@@ -46,10 +46,27 @@ class InviteConfig {
         iOSBundleId: iosBundleId,
       );
 
-  /// Extracts email + inviteId from an incoming deep-link URL.
-  /// Works on both the raw Firebase auth link and the continueUrl redirect.
-  static ({String? email, String? inviteId}) parseIncomingLink(String url) {
+  /// Firebase App Links delivers the email link wrapped in an
+  /// `/__/auth/links?link=<encoded_url>` envelope.  Unwrap it to expose
+  /// the real `/__/auth/action?oobCode=...` URL so the rest of the code
+  /// can work with a stable URL shape.
+  static String unwrapLinksEnvelope(String url) {
     final uri = Uri.tryParse(url);
+    if (uri == null) return url;
+    if (uri.path == '/__/auth/links') {
+      final inner = uri.queryParameters['link'];
+      if (inner != null && inner.isNotEmpty) return inner;
+    }
+    return url;
+  }
+
+  /// Extracts email + inviteId from an incoming deep-link URL.
+  /// Works on the Firebase auth links envelope, the raw auth action URL,
+  /// and the plain continueUrl redirect.
+  static ({String? email, String? inviteId}) parseIncomingLink(String url) {
+    // Strip the /__/auth/links?link=... wrapper first
+    final effective = unwrapLinksEnvelope(url);
+    final uri = Uri.tryParse(effective);
     if (uri == null) return (email: null, inviteId: null);
 
     // Direct continueUrl hit (web.app/accept-invite?email=...&inviteId=...)

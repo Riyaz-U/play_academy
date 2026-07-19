@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"play-academy-a73b2","appId":"1:609499275767:android:d037be2ccf01fe91fb4ef2","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"play-academy-a73b2","configurations":{"android":"1:609499275767:android:d037be2ccf01fe91fb4ef2","ios":"1:609499275767:ios:a59beb3b1d0c3ca3fb4ef2","web":"1:609499275767:web:10838e14a118f2e8fb4ef2"}}}}}}
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/accept-invite",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "play-academy-a73b2",
+          "appId": "1:609499275767:android:d037be2ccf01fe91fb4ef2",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "play-academy-a73b2",
+          "configurations": {
+            "android": "1:609499275767:android:d037be2ccf01fe91fb4ef2",
+            "ios": "1:609499275767:ios:a59beb3b1d0c3ca3fb4ef2",
+            "web": "1:609499275767:web:10838e14a118f2e8fb4ef2"
+          }
+        }
+      }
+    }
+  }
+}
