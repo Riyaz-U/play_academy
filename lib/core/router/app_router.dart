@@ -16,6 +16,7 @@ import '../../features/org_admin/screens/add_edit_coach_screen.dart';
 import '../../features/org_admin/screens/guardians_screen.dart';
 import '../../features/org_admin/screens/add_edit_guardian_screen.dart';
 import '../../features/org_admin/screens/invitations_screen.dart';
+import '../../features/auth/screens/accept_invite_screen.dart';
 import '../../features/coach/screens/coach_shell.dart';
 import '../../features/coach/screens/coach_dashboard.dart';
 import '../../features/coach/screens/sessions_screen.dart';
@@ -52,7 +53,9 @@ GoRouter createRouter(AuthProvider authProvider) {
 
       if (status == AuthStatus.unknown) return null;
 
-      final onAuthPage = loc == '/login' || loc == '/register';
+      // /accept-invite must stay reachable for unauthenticated users
+      final onAuthPage =
+          loc == '/login' || loc == '/register' || loc.startsWith('/accept-invite');
 
       if (status == AuthStatus.unauthenticated) {
         return onAuthPage ? null : '/login';
@@ -193,6 +196,16 @@ GoRouter createRouter(AuthProvider authProvider) {
       GoRoute(
           path: '/org/invitations',
           builder: (_, _) => const InvitationsScreen()),
+      GoRoute(
+          path: '/accept-invite',
+          builder: (_, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            return AcceptInviteScreen(
+              email: extra['email'] as String? ?? '',
+              inviteId: extra['inviteId'] as String? ?? '',
+              link: extra['link'] as String? ?? '',
+            );
+          }),
 
       // Coach
       GoRoute(

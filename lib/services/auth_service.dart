@@ -89,4 +89,12 @@ class AuthService {
   /// Returns true if [link] is a valid Firebase email sign-in link.
   bool isSignInWithEmailLink(String link) =>
       _auth.isSignInWithEmailLink(link);
+
+  /// Updates the password for the currently signed-in user.
+  /// Call this right after an email-link sign-in while the credential is fresh.
+  Future<void> updatePassword(String newPassword) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No signed-in user');
+    await user.updatePassword(newPassword);
+  }
 }

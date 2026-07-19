@@ -1,7 +1,10 @@
+import 'dart:async';
+import 'package:app_links/app_links.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'core/config/invite_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
@@ -16,6 +19,7 @@ import 'providers/drill_provider.dart';
 import 'providers/batch_provider.dart';
 import 'providers/guardian_provider.dart';
 import 'providers/invitation_provider.dart';
+import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 
 void main() async {
@@ -61,6 +65,48 @@ class _AppRouter extends StatefulWidget {
 
 class _AppRouterState extends State<_AppRouter> {
   late final _router = createRouter(context.read<AuthProvider>());
+  StreamSubscription<Uri>? _linkSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initDeepLinks();
+  }
+
+  Future<void> _initDeepLinks() async {
+    final appLinks = AppLinks();
+    final authService = AuthService();
+
+    _linkSub = appLinks.uriLinkStream.listen((uri) {
+      _handleLink(uri.toString(), authService);
+    });
+
+    try {
+      final initial = await appLinks.getInitialLink();
+      if (initial != null && mounted) {
+        _handleLink(initial.toString(), authService);
+      }
+    } catch (_) {
+      // No initial link or platform not supported
+    }
+  }
+
+  void _handleLink(String url, AuthService authService) {
+    if (!authService.isSignInWithEmailLink(url)) return;
+    final parsed = InviteConfig.parseIncomingLink(url);
+    if (parsed.email == null || parsed.inviteId == null) return;
+    _router.go('/accept-invite', extra: {
+      'email': parsed.email!,
+      'inviteId': parsed.inviteId!,
+      'link': url,
+    });
+  }
+
+  @override
+  void dispose() {
+    _linkSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

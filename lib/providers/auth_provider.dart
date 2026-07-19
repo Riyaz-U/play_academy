@@ -15,6 +15,8 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _userModel;
   String? _error;
   bool _isLoading = false;
+  // Survives the sign-out authStateChanges null event so the error renders on LoginScreen
+  String? _pendingErrorAfterSignOut;
 
   AuthStatus get status => _status;
   UserModel? get userModel => _userModel;
@@ -34,6 +36,13 @@ class AuthProvider extends ChangeNotifier {
       if (user == null) {
         _status = AuthStatus.unauthenticated;
         _userModel = null;
+        // Transfer any error that was set just before a forced sign-out
+        if (_pendingErrorAfterSignOut != null) {
+          _error = _pendingErrorAfterSignOut;
+          _pendingErrorAfterSignOut = null;
+        } else {
+          _error = null;
+        }
         notifyListeners();
         return;
       }
@@ -53,10 +62,11 @@ class AuthProvider extends ChangeNotifier {
 
       if (_userModel != null) {
         if (!_userModel!.isActive) {
-          _error = 'Your account has been deactivated. Please contact your administrator.';
+          _pendingErrorAfterSignOut =
+              'Your account has been deactivated. Please contact your administrator.';
           await _authService.signOut();
-          _status = AuthStatus.unauthenticated;
           _userModel = null;
+          // authStateChanges(null) fires next — null handler picks up the error
         } else {
           _status = AuthStatus.authenticated;
           try {
@@ -67,13 +77,16 @@ class AuthProvider extends ChangeNotifier {
           } catch (_) {
             // Notification init failure should not block login
           }
+          notifyListeners();
         }
       } else {
-        // Auth account exists but no Firestore doc after retries — sign out
+        // Firebase Auth account exists but no Firestore doc found after retries.
+        // Set an error that survives the sign-out event, then sign out cleanly.
+        _pendingErrorAfterSignOut =
+            'Your account is not fully set up. Please use your invitation link, or contact your administrator.';
         await _authService.signOut();
-        _status = AuthStatus.unauthenticated;
+        // authStateChanges(null) fires next — null handler picks up the error above
       }
-      notifyListeners();
     });
   }
 

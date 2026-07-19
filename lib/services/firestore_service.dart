@@ -54,6 +54,9 @@ class FirestoreService {
     return UserModel.fromMap(doc.data()!, uid);
   }
 
+  Future<void> updateUserDoc(String uid, Map<String, dynamic> data) =>
+      _db.collection(AppConstants.usersCollection).doc(uid).update(data);
+
   Future<UserModel?> getUserByEmail(String email) async {
     final snap = await _db
         .collection(AppConstants.usersCollection)
