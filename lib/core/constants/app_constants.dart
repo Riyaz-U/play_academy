@@ -15,6 +15,12 @@ class AppConstants {
   static const String sportProfilesCollection = 'sportProfiles';
   static const String batchesCollection = 'batches';
   static const String guardiansCollection = 'guardians';
+  static const String invitationsCollection = 'invitations';
+
+  // ── Invitation statuses ───────────────────────────────
+  static const String inviteStatusPending = 'pending';
+  static const String inviteStatusAccepted = 'accepted';
+  static const String inviteStatusRevoked = 'revoked';
 
   // ── Roles ─────────────────────────────────────────────
   static const String roleOrgAdmin = 'org_admin';
