@@ -21,6 +21,10 @@ class BranchProvider extends ChangeNotifier {
         _firestoreService.streamBranches(organizationId).listen((branches) {
       _branches = branches;
       notifyListeners();
+    }, onError: (e) {
+      debugPrint('[BranchProvider] streamBranches error: $e');
+      _error = 'Failed to load branches. Check Firestore indexes.';
+      notifyListeners();
     });
   }
 

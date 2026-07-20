@@ -216,6 +216,24 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
     }
   }
 
+  IconData _roleIcon(String role) => switch (role) {
+        AppConstants.roleCoach => Icons.sports_soccer,
+        AppConstants.roleGuardian => Icons.family_restroom,
+        _ => Icons.sports,
+      };
+
+  String _roleLabel(String role) => switch (role) {
+        AppConstants.roleCoach => 'Coach',
+        AppConstants.roleGuardian => 'Guardian',
+        _ => 'Player',
+      };
+
+  Color _roleColor(String role) => switch (role) {
+        AppConstants.roleCoach => const Color(0xFFF59E0B),
+        AppConstants.roleGuardian => const Color(0xFF6366F1),
+        _ => AppTheme.primaryGreen,
+      };
+
   String _friendlyAuthError(String code) => switch (code) {
         'invalid-action-code' ||
         'expired-action-code' =>
@@ -356,7 +374,7 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
                       color: AppTheme.primaryGreen.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.sports,
+                    child: Icon(_roleIcon(_invite!.role),
                         size: 32, color: AppTheme.primaryGreen),
                   ),
                   const SizedBox(height: 16),
@@ -365,11 +383,23 @@ class _AcceptInviteScreenState extends State<AcceptInviteScreen> {
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.textDark)),
-                  const SizedBox(height: 6),
-                  Text(
-                    "You've been invited to Play Academy",
-                    style: const TextStyle(
-                        fontSize: 13, color: AppTheme.textGrey),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: _roleColor(_invite!.role).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: _roleColor(_invite!.role).withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      'Joining as ${_roleLabel(_invite!.role)}',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _roleColor(_invite!.role)),
+                    ),
                   ),
                 ],
               ),

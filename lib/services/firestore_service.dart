@@ -108,19 +108,23 @@ class FirestoreService {
       _db
           .collection(AppConstants.branchesCollection)
           .where('organizationId', isEqualTo: organizationId)
-          .orderBy('createdAt')
           .snapshots()
-          .map((s) => s.docs
-              .map((d) => BranchModel.fromMap(d.data(), d.id))
-              .toList());
+          .map((s) {
+            final list = s.docs
+                .map((d) => BranchModel.fromMap(d.data(), d.id))
+                .toList();
+            list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+            return list;
+          });
 
   Future<List<BranchModel>> getBranches(String organizationId) async {
     final snap = await _db
         .collection(AppConstants.branchesCollection)
         .where('organizationId', isEqualTo: organizationId)
-        .orderBy('createdAt')
         .get();
-    return snap.docs.map((d) => BranchModel.fromMap(d.data(), d.id)).toList();
+    final list = snap.docs.map((d) => BranchModel.fromMap(d.data(), d.id)).toList();
+    list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return list;
   }
 
   // ── Coaches ────────────────────────────────────────────
